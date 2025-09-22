@@ -1,0 +1,32 @@
+{
+  "name": "liveboard",
+  "private": true,
+  "version": "0.1.0",
+  "description": "LiveBoard monorepo (client + server)",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build:server": "npm --prefix server run build",
+    "build:client": "npm --prefix client run build"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "bcryptjs": "^3.0.2",
+    "bintrees": "^1.0.2",
+    "debug": "^4.4.1",
+    "denque": "^2.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "ms": "^2.1.3",
+    "notepack.io": "^3.0.1",
+    "prom-client": "^15.1.3",
+    "redis": "^5.8.2",
+    "redis-commands": "^1.7.0",
+    "redis-errors": "^1.2.0",
+    "redis-parser": "^3.0.0",
+    "socket.io-adapter": "^2.5.5",
+    "socket.io-redis": "^5.4.0",
+    "tdigest": "^0.1.2",
+    "uid2": "^1.0.0"
+  }
+}

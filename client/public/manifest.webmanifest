@@ -1,0 +1,12 @@
+{
+  "name": "LiveBoard",
+  "short_name": "LiveBoard",
+  "start_url": "/display?kiosk=true",
+  "display": "standalone",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "description": "Real-time daily class schedule display for TVs.",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "32x32", "type": "image/x-icon" }
+  ]
+}

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install server deps
+        run: |
+          cd server
+          npm ci
+      - name: Install client deps
+        run: |
+          cd client
+          npm ci
+      - name: Lint placeholder (todo)
+        run: echo "Add ESLint later"
+      - name: Build client
+        run: |
+          cd client
+          npm run build --if-present
+      - name: Build server Docker image
+        run: |
+          docker build -f server/Dockerfile -t liveboard-server:ci .
+
+

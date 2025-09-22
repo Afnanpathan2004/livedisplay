@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ScheduleEntry {
+  id           String   @id @default(uuid())
+  date         DateTime @db.Date
+  startTime    DateTime @db.Time
+  endTime      DateTime @db.Time
+  roomNumber   String
+  subject      String
+  facultyName  String
+  tags         Json?    @default("[]")
+  lastUpdated  DateTime @updatedAt
+  createdBy    String?
+  createdById  String?
+  user         User?    @relation(fields: [createdById], references: [id])
+
+  @@map("schedule_entries")
+}
+
+model Announcement {
+  id        String    @id @default(uuid())
+  message   String
+  active    Boolean   @default(true)
+  startAt   DateTime?
+  endAt     DateTime?
+  priority  Int       @default(0)
+  timestamp DateTime  @default(now())
+  createdBy String?
+  createdById String?
+  user      User?     @relation(fields: [createdById], references: [id])
+
+  @@map("announcements")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  assignedTo  String?
+  room        String?
+  dueTime     DateTime?
+  status      String    @default("pending") // pending, in_progress, completed, cancelled
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  createdById String?
+  user        User?     @relation(fields: [createdById], references: [id])
+
+  @@map("tasks")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String?   @unique
+  passwordHash String
+  role         String    @default("viewer") // admin, editor, viewer
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  scheduleEntries ScheduleEntry[]
+  announcements   Announcement[]
+  tasks           Task[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  config    Json     @default("{}")
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("devices")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   // create, update, delete, login, logout
+  entity    String   // schedule, announcement, task, user
+  entityId  String?
+  before    Json?
+  after     Json?
+  timestamp DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  @@map("audit_logs")
+}
