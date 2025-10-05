@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>LiveBoard Auth Test</h1>
+    <button onclick="testAuth()">Test Auth</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <pre id="output"></pre>
+
+    <script>
+        function testAuth() {
+            const output = document.getElementById('output');
+            const token = localStorage.getItem('liveboard_token');
+            const userStr = localStorage.getItem('liveboard_user');
+            const user = userStr ? JSON.parse(userStr) : null;
+
+            output.textContent = `
+Token: ${token ? 'Present' : 'Missing'}
+User String: ${userStr}
+User Object: ${JSON.stringify(user, null, 2)}
+User Role: ${user?.role || 'UNDEFINED'}
+            `;
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            alert('Storage cleared! Refresh and login again.');
+        }
+
+        // Auto-run on load
+        testAuth();
+    </script>
+</body>
+</html>

@@ -1,6 +1,19 @@
 const jwt = require('jsonwebtoken');
-const { logger } = require('../utils/logger');
-const { ROLE_PERMISSIONS } = require('../utils/constants');
+
+// Simple logger fallback
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.log
+};
+
+// Simple role permissions
+const ROLE_PERMISSIONS = {
+  admin: ['*'],
+  editor: ['read', 'write'],
+  viewer: ['read']
+};
 
 // Middleware to require authentication
 const requireAuth = async (req, res, next) => {
@@ -89,9 +102,19 @@ const requireRole = (role) => {
 // Middleware to require admin role
 const requireAdmin = requireRole('admin');
 
+// Middleware for display access
+export const displayAuth = (req, res, next) => {
+  const displayKey = req.headers['x-display-access'];
+  if (displayKey === process.env.DISPLAY_ACCESS_KEY) {
+    return next();
+  }
+  res.status(401).json({ error: 'Invalid display access' });
+};
+
 module.exports = {
   requireAuth,
   requirePermission,
   requireRole,
-  requireAdmin
+  requireAdmin,
+  displayAuth
 };

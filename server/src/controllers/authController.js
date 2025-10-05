@@ -29,9 +29,11 @@ const registerSchema = z.object({
 
 exports.login = async (req, res, next) => {
   try {
-    const { username, password } = loginSchema.parse(req.body);
+    // Handle both emailOrUsername (from validation middleware) and username (legacy)
+    const { emailOrUsername, username, password } = req.body;
+    const loginIdentifier = emailOrUsername || username;
     
-    const user = await getUserByUsername(username);
+    const user = await getUserByUsername(loginIdentifier);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

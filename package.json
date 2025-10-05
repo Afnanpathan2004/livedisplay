@@ -29,5 +29,8 @@
     "socket.io-redis": "^5.4.0",
     "tdigest": "^0.1.2",
     "uid2": "^1.0.0"
+  },
+  "devDependencies": {
+    "babel-plugin-styled-components": "^2.1.4"
   }
 }

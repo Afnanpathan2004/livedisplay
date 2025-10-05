@@ -454,7 +454,28 @@ const enterpriseDb = {
       notifications.push(notification);
       return notification;
     }
+  },
+
+  // Settings Management
+  settings: {
+    getAll: async () => {
+      return systemSettings;
+    },
+    getCategory: async (category) => {
+      return systemSettings[category] || null;
+    },
+    updateCategory: async (category, items) => {
+      systemSettings[category] = items;
+      return systemSettings[category];
+    },
+    initialize: async (defaultSettings) => {
+      systemSettings = { ...defaultSettings };
+      return systemSettings;
+    }
   }
 };
+
+// System settings storage
+let systemSettings = {};
 
 module.exports = enterpriseDb;

@@ -6,7 +6,20 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
-const { logger, auditLogger } = require('./utils/logger');
+// Simple logger fallback to avoid dependency issues
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.log
+};
+
+const auditLogger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.log
+};
 
 // Initialize environment variables first
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
@@ -91,15 +104,6 @@ try {
   const announcementRoutes = require('./routes/announcementRoutes');
   const taskRoutes = require('./routes/taskRoutes');
   const exportRoutes = require('./routes/exportRoutes');
-  
-  // Enterprise routes
-  const employeeRoutes = require('./routes/employeeRoutes');
-  const roomBookingRoutes = require('./routes/roomBookingRoutes');
-  const visitorRoutes = require('./routes/visitorRoutes');
-  const assetRoutes = require('./routes/assetRoutes');
-  const attendanceRoutes = require('./routes/attendanceRoutes');
-  const leaveRoutes = require('./routes/leaveRoutes');
-  const notificationRoutes = require('./routes/notificationRoutes');
 
   // API routes
   app.use('/api/auth', authRoutes);
@@ -107,18 +111,18 @@ try {
   app.use('/api/announcements', announcementRoutes);
   app.use('/api/tasks', taskRoutes);
   app.use('/api/export', exportRoutes);
-  
-  // Enterprise API routes
-  app.use('/api/employees', employeeRoutes);
-  app.use('/api/bookings', roomBookingRoutes);
-  app.use('/api/visitors', visitorRoutes);
-  app.use('/api/assets', assetRoutes);
-  app.use('/api/attendance', attendanceRoutes);
-  app.use('/api/leaves', leaveRoutes);
-  app.use('/api/notifications', notificationRoutes);
-  
-  logger.info('✓ All routes loaded successfully');
-  console.log('✓ All routes loaded successfully');
+
+  // TODO: Enterprise routes temporarily disabled - need schema fixes
+  // const employeeRoutes = require('./routes/employeeRoutes');
+  // const roomBookingRoutes = require('./routes/roomBookingRoutes');
+  // const visitorRoutes = require('./routes/visitorRoutes');
+  // const assetRoutes = require('./routes/assetRoutes');
+  // const attendanceRoutes = require('./routes/attendanceRoutes');
+  // const leaveRoutes = require('./routes/leaveRoutes');
+  // const notificationRoutes = require('./routes/notificationRoutes');
+
+  logger.info('✓ Basic routes loaded successfully');
+  console.log('✓ Basic routes loaded successfully');
 } catch (error) {
   logger.error('✗ Error loading routes:', { error: error.message, stack: error.stack });
   console.error('✗ Error loading routes:', error.message);

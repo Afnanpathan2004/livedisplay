@@ -1,105 +1,127 @@
-import React, { createContext, useState, useEffect, useContext } from 'react'
-import { apiService, handleApiError } from '../services/api'
+import { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import apiService from '../services/api';
+import config from '../config';
 
-export const AuthContext = createContext()
+export const AuthContext = createContext(null);
+
+// Custom hook to use the AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Initialize auth state from localStorage
   useEffect(() => {
-    if (token) {
-      // Verify token validity
-      verifyToken()
-    } else {
-      setLoading(false)
-    }
-  }, [token])
+    const initAuth = async () => {
+      try {
+        const token = localStorage.getItem(config.STORAGE_KEYS.token);
+        const savedUser = localStorage.getItem(config.STORAGE_KEYS.user);
 
-  const verifyToken = async () => {
+        if (token && savedUser) {
+          // Verify token is still valid
+          try {
+            const { data } = await apiService.auth.me();
+            setUser(data.user);
+            setIsAuthenticated(true);
+          } catch (error) {
+            // Token invalid, clear storage
+            localStorage.removeItem(config.STORAGE_KEYS.token);
+            localStorage.removeItem(config.STORAGE_KEYS.user);
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  const login = useCallback(async (username, password) => {
     try {
-      const response = await apiService.auth.me()
-      setUser(response.data)
+      const { data } = await apiService.auth.login({ username, password });
+      
+      if (data.token && data.user) {
+        localStorage.setItem(config.STORAGE_KEYS.token, data.token);
+        localStorage.setItem(config.STORAGE_KEYS.user, JSON.stringify(data.user));
+        setUser(data.user);
+        setIsAuthenticated(true);
+        return data.user;
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
-      logout()
+      console.error('Login error:', error);
+      throw new Error(error.message || config.ERROR_MESSAGES.network);
+    }
+  }, []);
+
+  const register = useCallback(async (userData) => {
+    try {
+      const { data } = await apiService.auth.register(userData);
+      
+      if (data.token && data.user) {
+        localStorage.setItem(config.STORAGE_KEYS.token, data.token);
+        localStorage.setItem(config.STORAGE_KEYS.user, JSON.stringify(data.user));
+        setUser(data.user);
+        setIsAuthenticated(true);
+        return data.user;
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed');
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      // Attempt to call logout endpoint (don't wait for it)
+      apiService.auth.logout().catch(() => {});
+    } catch (error) {
+      console.error('Logout error:', error);
     } finally {
-      setLoading(false)
+      // Always clear local state
+      localStorage.removeItem(config.STORAGE_KEYS.token);
+      localStorage.removeItem(config.STORAGE_KEYS.user);
+      setUser(null);
+      setIsAuthenticated(false);
     }
-  }
+  }, []);
 
-  const login = async (username, password) => {
-    try {
-      const response = await apiService.auth.login({ username, password })
-      const { token: newToken, user: userData } = response.data
-      
-      localStorage.setItem('token', newToken)
-      setToken(newToken)
-      setUser(userData)
-      
-      if (window.showSuccess) {
-        window.showSuccess(`Welcome back, ${userData.firstName || userData.username}!`)
-      }
-      
-      return userData
-    } catch (error) {
-      const errorMessage = handleApiError(error, false)
-      throw new Error(errorMessage)
-    }
-  }
-
-  const register = async (username, email, password) => {
-    try {
-      const response = await apiService.auth.register({ username, email, password })
-      const { token: newToken, user: userData } = response.data
-      
-      localStorage.setItem('token', newToken)
-      setToken(newToken)
-      setUser(userData)
-      
-      if (window.showSuccess) {
-        window.showSuccess(`Welcome to LiveDisplay, ${userData.firstName || userData.username}!`)
-      }
-      
-      return userData
-    } catch (error) {
-      const errorMessage = handleApiError(error, false)
-      throw new Error(errorMessage)
-    }
-  }
-
-  const logout = () => {
-    localStorage.removeItem('token')
-    setToken(null)
-    setUser(null)
-    
-    if (window.showInfo) {
-      window.showInfo('You have been logged out successfully.')
-    }
-  }
+  const updateUser = useCallback((updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem(config.STORAGE_KEYS.user, JSON.stringify(updatedUser));
+  }, []);
 
   const value = {
     user,
-    token,
+    loading,
+    isAuthenticated,
     login,
     register,
     logout,
-    loading,
-    isAuthenticated: !!user
-  }
+    updateUser,
+  };
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-// Custom hook to use the AuthContext
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+export default AuthContext;

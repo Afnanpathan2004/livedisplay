@@ -40,10 +40,10 @@ export default function Login() {
   const getDefaultRoute = (role) => {
     switch (role) {
       case 'admin':
+        return '/admin'
       case 'hr':
-        return '/hr-dashboard'
       case 'manager':
-        return '/hr-dashboard'
+        return '/dashboard' // Temporarily redirect to dashboard until hr-dashboard is available
       default:
         return '/dashboard'
     }
@@ -185,12 +185,6 @@ export default function Login() {
                   Create Account
                 </Link>
               </p>
-              
-              <div className="mt-6 pt-6 border-t border-slate-700">
-                <p className="text-xs text-slate-500 text-center">
-                  Demo Credentials: <span className="text-blue-400 font-mono">admin / admin123</span>
-                </p>
-              </div>
             </div>
           </form>
         </div>

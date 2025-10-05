@@ -1,23 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { format } from 'date-fns'
-import Clock from '../components/Clock'
-import ScheduleGrid from '../components/ScheduleGrid'
+import { apiService } from '../services/api'
+import { useSocket } from '../hooks/useSocket'
 import AnnouncementBanner from '../components/AnnouncementBanner'
-import LayoutManager from '../components/LayoutManager'
-import { io } from 'socket.io-client'
+import ScheduleGrid from '../components/ScheduleGrid'
+import Clock from '../components/Clock'
 import QRCode from 'qrcode.react'
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 export default function Display() {
   const [entries, setEntries] = useState([])
   const [announcement, setAnnouncement] = useState(null)
-  const [connected, setConnected] = useState(false)
   const [offline, setOffline] = useState(false)
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  // Use the improved socket hook
+  const { isConnected, connectionError, emit } = useSocket({
+    'schedule:update': (payload) => {
+      if (!payload || !payload.date || payload.date === todayStr) loadSchedule()
+    },
+    'announcement:update': () => loadAnnouncement(),
+    'system:midnight': () => {
+      // Reload to switch to new date automatically
+      location.reload()
+    }
+  })
 
   const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
   const scheduleKey = useMemo(() => `schedule:${todayStr}`, [todayStr])
@@ -29,7 +38,7 @@ export default function Display() {
   async function loadSchedule() {
     try {
       setError('')
-      const res = await axios.get(`${API}/api/schedule`, { params: { date: todayStr } })
+      const res = await apiService.schedule.getAll({ date: todayStr })
       setEntries(res.data)
       localStorage.setItem(scheduleKey, JSON.stringify(res.data))
       setOffline(false)
@@ -50,7 +59,7 @@ export default function Display() {
 
   async function loadAnnouncement() {
     try {
-      const res = await axios.get(`${API}/api/announcements`)
+      const res = await apiService.announcements.getAll()
       const active = res.data.find(a => a.active)
       const msg = active ? active.message : null
       setAnnouncement(msg)
@@ -65,32 +74,7 @@ export default function Display() {
   useEffect(() => {
     loadSchedule()
     loadAnnouncement()
-
-    const url = import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:4000'
-    const socket = io(url, { transports: ['websocket'], reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 500, reconnectionDelayMax: 5000 })
-
-    socket.on('connect', () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
-
-    socket.on('schedule:update', (payload) => {
-      if (!payload || !payload.date || payload.date === todayStr) loadSchedule()
-    })
-
-    socket.on('announcement:update', () => loadAnnouncement())
-
-    socket.on('system:midnight', () => {
-      // Reload to switch to new date automatically
-      location.reload()
-    })
-
-    return () => socket.close()
   }, [])
-
-  if (kiosk) {
-    return (
-      <LayoutManager entries={entries} announcement={announcement} kiosk />
-    )
-  }
 
   if (loading) {
     return (
@@ -120,12 +104,12 @@ export default function Display() {
                 <p className="text-sm text-slate-400">Live Display · {format(new Date(), 'MMMM dd, yyyy')}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-6">
               <Clock />
-              
+
               {/* Quick Access Menu */}
-              <div className="relative group">
+              <div className="relative group z-50">
                 <button className="flex items-center px-4 py-2 bg-slate-800/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all duration-300 border border-slate-700 hover:border-slate-600 shadow-lg">
                   <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -135,9 +119,9 @@ export default function Display() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                
+
                 {/* Dropdown Menu */}
-                <div className="absolute right-0 top-full mt-2 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                <div className="absolute right-0 top-full mt-2 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100]">
                   <div className="p-4">
                     <h3 className="text-white font-bold mb-4 flex items-center">
                       <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,7 +139,7 @@ export default function Display() {
                           <div className="text-slate-400 group-hover:text-blue-100 text-xs">Edit display content</div>
                         </div>
                       </Link>
-                      
+
                       <Link to="/login" className="group flex items-center p-3 bg-slate-700/50 hover:bg-green-600 rounded-xl transition-all duration-300 border border-slate-600 hover:border-green-500">
                         <svg className="w-4 h-4 mr-2 text-green-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -165,7 +149,7 @@ export default function Display() {
                           <div className="text-slate-400 group-hover:text-green-100 text-xs">Manage staff</div>
                         </div>
                       </Link>
-                      
+
                       <Link to="/login" className="group flex items-center p-3 bg-slate-700/50 hover:bg-purple-600 rounded-xl transition-all duration-300 border border-slate-600 hover:border-purple-500">
                         <svg className="w-4 h-4 mr-2 text-purple-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -175,7 +159,7 @@ export default function Display() {
                           <div className="text-slate-400 group-hover:text-purple-100 text-xs">Book & manage</div>
                         </div>
                       </Link>
-                      
+
                       <Link to="/login" className="group flex items-center p-3 bg-slate-700/50 hover:bg-orange-600 rounded-xl transition-all duration-300 border border-slate-600 hover:border-orange-500">
                         <svg className="w-4 h-4 mr-2 text-orange-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -185,7 +169,7 @@ export default function Display() {
                           <div className="text-slate-400 group-hover:text-orange-100 text-xs">Track access</div>
                         </div>
                       </Link>
-                      
+
                       <Link to="/login" className="group flex items-center p-3 bg-slate-700/50 hover:bg-red-600 rounded-xl transition-all duration-300 border border-slate-600 hover:border-red-500">
                         <svg className="w-4 h-4 mr-2 text-red-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -195,7 +179,7 @@ export default function Display() {
                           <div className="text-slate-400 group-hover:text-red-100 text-xs">Track inventory</div>
                         </div>
                       </Link>
-                      
+
                       <Link to="/login" className="group flex items-center p-3 bg-slate-700/50 hover:bg-cyan-600 rounded-xl transition-all duration-300 border border-slate-600 hover:border-cyan-500">
                         <svg className="w-4 h-4 mr-2 text-cyan-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -206,7 +190,7 @@ export default function Display() {
                         </div>
                       </Link>
                     </div>
-                    
+
                     <div className="mt-4 pt-4 border-t border-slate-700">
                       <Link to="/login" className="flex items-center justify-center w-full p-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl transition-all duration-300 font-medium">
                         <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,7 +202,7 @@ export default function Display() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Navigation Buttons */}
               <div className="flex items-center space-x-2">
                 <Link
@@ -231,7 +215,7 @@ export default function Display() {
                   </svg>
                   Login
                 </Link>
-                
+
                 <Link
                   to="/login"
                   className="group flex items-center px-3 py-2 bg-slate-800/50 hover:bg-cyan-600 text-slate-300 hover:text-white rounded-xl transition-all duration-300 border border-slate-700 hover:border-cyan-500 shadow-lg hover:shadow-cyan-500/25"
@@ -242,7 +226,7 @@ export default function Display() {
                   </svg>
                   Home
                 </Link>
-                
+
                 <Link
                   to="/login"
                   className="group flex items-center px-3 py-2 bg-slate-800/50 hover:bg-purple-600 text-slate-300 hover:text-white rounded-xl transition-all duration-300 border border-slate-700 hover:border-purple-500 shadow-lg hover:shadow-purple-500/25"
@@ -254,7 +238,7 @@ export default function Display() {
                   </svg>
                   Admin
                 </Link>
-                
+
                 <Link
                   to="/login"
                   className="group flex items-center px-3 py-2 bg-slate-800/50 hover:bg-green-600 text-slate-300 hover:text-white rounded-xl transition-all duration-300 border border-slate-700 hover:border-green-500 shadow-lg hover:shadow-green-500/25"
@@ -294,13 +278,13 @@ export default function Display() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-white">Today's Schedule</h2>
             <div className="flex items-center space-x-2 text-sm">
-              <div className={`flex items-center space-x-1 ${connected ? 'text-green-400' : 'text-red-400'}`}>
-                <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                <span>{connected ? 'Connected' : 'Disconnected'}</span>
+              <div className={`flex items-center space-x-1 ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
               </div>
               {offline && (
                 <div className="flex items-center space-x-1 text-amber-400">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   <span>Offline Mode</span>
@@ -308,9 +292,9 @@ export default function Display() {
               )}
             </div>
           </div>
-          
+
           <ScheduleGrid entries={entries} />
-          
+
           {entries.length === 0 && !loading && (
             <div className="text-center py-12">
               <svg className="h-12 w-12 text-slate-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -382,7 +366,7 @@ export default function Display() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </Link>
-          
+
           {/* Admin Panel Button */}
           <Link
             to="/login"
@@ -394,7 +378,7 @@ export default function Display() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </Link>
-          
+
           {/* HR Dashboard Button */}
           <Link
             to="/login"
@@ -405,7 +389,7 @@ export default function Display() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </Link>
-          
+
           {/* Home/Login Button */}
           <Link
             to="/login"

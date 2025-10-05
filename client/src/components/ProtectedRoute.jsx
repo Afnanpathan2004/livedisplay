@@ -23,9 +23,9 @@ export default function ProtectedRoute({ children, requireAuth = true, requiredR
   }
 
   if (!requireAuth && user) {
-    // Redirect based on user role
-    if (user.role === 'admin' || user.role === 'hr') {
-      return <Navigate to="/hr-dashboard" replace />
+    // Redirect based on user role - only to existing routes
+    if (user.role === 'admin') {
+      return <Navigate to="/admin" replace />
     }
     return <Navigate to="/dashboard" replace />
   }

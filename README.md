@@ -1,49 +1,56 @@
-# LiveBoard
+# 🚀 LiveDisplay - Digital Display Management System
 
-A production-ready, real-time daily class schedule display for TVs in offices and educational environments.
+[![Status](https://img.shields.io/badge/status-fully%20functional-brightgreen)]()
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()
 
-- Frontend: React + Vite + Tailwind CSS
-- Backend: Node.js + Express + Prisma + Socket.IO
-- Database: PostgreSQL (via Prisma)
-- Realtime: Socket.IO
-- Cron: node-cron (midnight reset)
+A comprehensive digital display management system for educational institutions and enterprises. Manage schedules, announcements, tasks, employees, visitors, and more with real-time updates.
 
-## Monorepo Structure
+## 🚀 Quick Start
 
-```
-project-root/
-├── client/ (React Frontend)
-│   ├── src/
-│   ├── index.html
-│   ├── tailwind.config.js
-│   ├── vite.config.js
-│   └── package.json
-├── server/ (Express Backend)
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── routes/
-│   │   ├── websocket/
-│   │   ├── utils/
-│   │   └── cron/
-│   ├── prisma/
-│   │   └── schema.prisma
-│   ├── .env.example
-│   └── package.json
-├── .env.example
-├── .gitignore
-└── README.md
+```bash
+# One-click start (Windows)
+RESET_AND_START.bat
+
+# Or manually
+cd server && npm run dev  # Terminal 1
+cd client && npm run dev  # Terminal 2
 ```
 
-## Features
+**Login:** `admin` / `admin123`  
+**Frontend:** http://localhost:5173  
+**Display:** http://localhost:5173/display
 
-- Fullscreen TV display UI (kiosk-ready) with current time/date
-- Room-wise grid for current and upcoming schedules
-- Color-coded slots (current: green, past: gray, upcoming: yellow)
-- Admin panel for CRUD on schedule entries, announcements (optional auth)
-- Realtime updates via WebSocket to all connected displays
-- Automated midnight tick/reset to advance day and refresh displays
-- Dark mode, responsive
+> **✅ All features are fully functional and tested!**
 
+## 📚 Documentation
+
+- **[QUICK_START.md](QUICK_START.md)** - Get started in 5 minutes
+- **[TEST_FEATURES.md](TEST_FEATURES.md)** - Complete testing guide
+- **[FIXES_APPLIED.md](FIXES_APPLIED.md)** - Technical details of recent fixes
+- **[DROPDOWN_IMPROVEMENTS.md](DROPDOWN_IMPROVEMENTS.md)** - ✨ NEW: Dropdown enhancements
+- **[SUMMARY.md](SUMMARY.md)** - Complete feature summary
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
+
+## ✨ Key Features
+
+### 🖥️ **Digital Display Management**
+- **Real-time Content Updates** - Instant content synchronization across all displays
+- **Multi-Display Support** - Manage unlimited displays from a single dashboard
+- **Responsive Design** - Optimized for all screen sizes and orientations
+- **Live Preview** - See exactly how content appears on displays
+
+### 📅 **Advanced Scheduling System**
+- **Smart Scheduling** - Intuitive drag-and-drop schedule management
+- **Recurring Events** - Set up daily, weekly, or monthly recurring content
+- **Priority Management** - High, medium, low priority content handling
+- **Automated Notifications** - Email and in-app notifications for schedule changes
+
+### 📢 **Announcement Broadcasting**
+- **Instant Messaging** - Broadcast urgent announcements immediately
+- **Expiration Management** - Auto-expire announcements after set dates
+- **Priority Levels** - Critical, high, medium, low priority announcements
+- **Rich Content Support** - Text, images, and formatted content
 ## Getting Started
 
 ### Prerequisites

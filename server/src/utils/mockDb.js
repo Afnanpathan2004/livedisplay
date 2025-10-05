@@ -4,27 +4,32 @@ const bcrypt = require('bcryptjs');
 let scheduleEntries = [];
 let announcements = [];
 let tasks = [];
+// Pre-computed hash for admin123 to avoid async issues
+const adminPasswordHash = '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj5/7/4/8/9/0';
+
 let users = [
   {
     id: 'admin-user-id',
     username: 'admin',
     email: 'admin@example.com',
-    passwordHash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj5/7/4/8/9/0', // admin123
+    passwordHash: adminPasswordHash,
     role: 'admin',
     createdAt: new Date(),
     lastLogin: null
   }
 ];
 
-// Initialize admin user with proper password hash
-(async () => {
-  try {
-    const adminHash = await bcrypt.hash('admin123', 12);
-    users[0].passwordHash = adminHash;
-  } catch (err) {
-    console.error('Failed to hash admin password:', err);
-  }
-})();
+// Initialize admin user with proper password hash synchronously
+try {
+  // Generate a fresh hash for admin123
+  const adminHash = bcrypt.hashSync('admin123', 12);
+  users[0].passwordHash = adminHash;
+  console.log('Admin user initialized with username: admin, password: admin123');
+} catch (err) {
+  console.error('Failed to hash admin password:', err);
+  // Use pre-computed hash as fallback
+  users[0].passwordHash = adminPasswordHash;
+}
 
 const mockDb = {
   scheduleEntry: {

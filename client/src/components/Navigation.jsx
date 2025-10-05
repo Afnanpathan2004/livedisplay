@@ -29,80 +29,38 @@ const Navigation = () => {
 
   const navigationItems = [
     {
-      name: 'HR Dashboard',
-      path: '/hr-dashboard',
-      icon: Home,
-      roles: ['admin', 'hr', 'manager'],
-      description: 'Main enterprise dashboard'
-    },
-    {
-      name: 'Employees',
-      path: '/employees',
-      icon: Users,
-      roles: ['admin', 'hr', 'manager'],
-      description: 'Manage employee records'
-    },
-    {
-      name: 'Room Booking',
-      path: '/bookings',
-      icon: Calendar,
-      roles: ['admin', 'hr', 'manager', 'employee'],
-      description: 'Book and manage rooms'
-    },
-    {
-      name: 'Attendance',
-      path: '/attendance',
-      icon: UserCheck,
-      roles: ['admin', 'hr', 'manager', 'employee'],
-      description: 'Track attendance records'
-    },
-    {
-      name: 'Leave Management',
-      path: '/leaves',
-      icon: Calendar,
-      roles: ['admin', 'hr', 'manager', 'employee'],
-      description: 'Manage leave applications'
-    },
-    {
-      name: 'Visitors',
-      path: '/visitors',
-      icon: Building,
-      roles: ['admin', 'hr', 'security', 'employee'],
-      description: 'Visitor registration & tracking'
-    },
-    {
-      name: 'Assets',
-      path: '/assets',
-      icon: Package,
-      roles: ['admin', 'hr', 'manager'],
-      description: 'Asset tracking & management'
-    },
-    {
-      name: 'Reports',
-      path: '/reports',
-      icon: BarChart3,
-      roles: ['admin', 'hr', 'manager'],
-      description: 'Analytics & reporting'
-    },
-    {
-      name: 'Notifications',
-      path: '/notifications',
-      icon: Bell,
-      roles: ['admin', 'hr', 'manager', 'employee'],
-      description: 'Notification center'
-    },
-    {
-      name: 'LiveBoard Display',
+      name: 'Dashboard',
       path: '/dashboard',
+      icon: Home,
+      description: 'LiveBoard dashboard'
+    },
+    {
+      name: 'Admin Panel',
+      path: '/admin',
       icon: Settings,
-      roles: ['admin', 'hr', 'manager', 'employee'],
-      description: 'Original LiveBoard features'
+      description: 'Manage schedules and content'
+    },
+    {
+      name: 'User Management',
+      path: '/users',
+      icon: Users,
+      description: 'Manage users and access'
+    },
+    {
+      name: 'Settings',
+      path: '/settings',
+      icon: Settings,
+      description: 'Manage dropdown options'
     }
   ];
 
-  const filteredNavItems = navigationItems.filter(item => 
-    item.roles.includes(user?.role)
-  );
+  // Show all navigation items to logged-in users
+  const filteredNavItems = navigationItems;
+  
+  // Debug logging
+  console.log('Navigation - User:', user);
+  console.log('Navigation - Items to show:', filteredNavItems.length);
+  console.log('Navigation - Items:', filteredNavItems.map(i => i.name));
 
   const NavItem = ({ item, mobile = false }) => {
     const isActive = location.pathname === item.path;
