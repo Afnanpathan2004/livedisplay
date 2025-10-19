@@ -24,9 +24,12 @@ server/dist/
 client/dist/
 
 # dotenv environment variables
+
 .env
-server/.env
-client/.env
+.env.local
+.env.development
+.env.production
+.env.example
 
 
 # OS / Editor
