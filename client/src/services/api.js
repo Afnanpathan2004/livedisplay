@@ -192,6 +192,16 @@ export const apiService = {
     approve: (id) => authApi.post(`/api/users/${id}/approve`),
     reject: (id, reason) => authApi.post(`/api/users/${id}/reject`, { reason }),
   },
+  bookings: {
+    getAll: (params) => enterpriseApi.get('/api/bookings', { params }),
+    getById: (id) => enterpriseApi.get(`/api/bookings/${id}`),
+    create: (data) => enterpriseApi.post('/api/bookings', data),
+    update: (id, data) => enterpriseApi.put(`/api/bookings/${id}`, data),
+    delete: (id) => enterpriseApi.delete(`/api/bookings/${id}`),
+    cancel: (id) => enterpriseApi.patch(`/api/bookings/${id}/cancel`),
+    getByDate: (date) => enterpriseApi.get(`/api/bookings/date/${date}`),
+    getByRoom: (room) => enterpriseApi.get(`/api/bookings/room/${encodeURIComponent(room)}`),
+  },
 };
 
 // Export as default for easier importing

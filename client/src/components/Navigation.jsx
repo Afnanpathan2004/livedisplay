@@ -13,7 +13,9 @@ import {
   LogOut,
   Menu,
   X,
-  BarChart3
+  BarChart3,
+  Monitor,
+  Smartphone
 } from 'lucide-react';
 
 const Navigation = () => {
@@ -41,6 +43,12 @@ const Navigation = () => {
       description: 'Manage schedules and content'
     },
     {
+      name: 'Calendar',
+      path: '/calendar',
+      icon: Calendar,
+      description: 'Room booking calendar'
+    },
+    {
       name: 'User Management',
       path: '/users',
       icon: Users,
@@ -51,6 +59,18 @@ const Navigation = () => {
       path: '/settings',
       icon: Settings,
       description: 'Manage dropdown options'
+    },
+    {
+      name: 'Kiosk Mode',
+      path: '/kiosk',
+      icon: Monitor,
+      description: 'Full-screen display mode'
+    },
+    {
+      name: 'Mobile View',
+      path: '/mobile',
+      icon: Smartphone,
+      description: 'Mobile-optimized interface'
     }
   ];
 

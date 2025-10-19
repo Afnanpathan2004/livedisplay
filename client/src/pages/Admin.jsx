@@ -199,9 +199,10 @@ export default function Admin() {
     setLoading(true)
     setError('')
     try {
-      await axiosAuth.post(`${API_BASE_URL}/api/schedule`, { ...form, date })
-      setForm({ start_time: '', end_time: '', room_number: '', subject: '', faculty_name: '' })
-      setSuccess('Schedule entry added successfully!')
+      const scheduleDate = form.scheduleDate || date;
+      await axiosAuth.post(`${API_BASE_URL}/api/schedule`, { ...form, date: scheduleDate })
+      setForm({ start_time: '', end_time: '', room_number: '', subject: '', faculty_name: '', scheduleDate: '' })
+      setSuccess(`Schedule entry added successfully for ${scheduleDate}!`)
       loadData()
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add schedule entry')
@@ -411,6 +412,12 @@ export default function Admin() {
               >
                 Dashboard
               </Link>
+              <Link
+                to="/calendar"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+              >
+                📅 Calendar
+              </Link>
               {/* Only show User Management to admin */}
               {user?.role === 'admin' && (
                 <Link
@@ -509,8 +516,12 @@ export default function Admin() {
                   type="date"
                   value={date}
                   onChange={e => setDate(e.target.value)}
+                  min={format(new Date(), 'yyyy-MM-dd')} // Allow current and future dates
                   className="px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
+                <p className="text-xs text-slate-400 mt-1">
+                  📅 You can schedule for today and future dates
+                </p>
               </div>
 
               {/* Search and Filter Controls */}
@@ -535,20 +546,39 @@ export default function Admin() {
                 />
               </div>
 
-              <form onSubmit={submitEntry} className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-                <div>
-                  <select
-                    value={form.start_time}
-                    onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    required
-                  >
-                    <option value="">Start Time</option>
-                    {timeSlots.map(time => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
-                  </select>
+              <form onSubmit={submitEntry} className="space-y-4 mb-6">
+                {/* Date Selection for Schedule */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Schedule Date</label>
+                    <input
+                      type="date"
+                      value={form.scheduleDate || date}
+                      onChange={e => setForm(f => ({ ...f, scheduleDate: e.target.value }))}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      required
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      📅 Select date for this schedule entry
+                    </p>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div>
+                    <select
+                      value={form.start_time}
+                      onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      required
+                    >
+                      <option value="">Start Time</option>
+                      {timeSlots.map(time => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
                 <div>
                   <select
                     value={form.end_time}
@@ -601,13 +631,14 @@ export default function Admin() {
                     ))}
                   </select>
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-slate-900 font-semibold py-3 px-4 rounded-lg transition-all"
-                >
-                  {loading ? 'Adding...' : 'Add Schedule'}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-slate-900 font-semibold py-3 px-4 rounded-lg transition-all"
+                  >
+                    {loading ? 'Adding...' : 'Add Schedule'}
+                  </button>
+                </div>
               </form>
 
               <div className="space-y-3">

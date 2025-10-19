@@ -1,20 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { apiService } from '../services/api'
 import { useSocket } from '../hooks/useSocket'
+import { useResponsive } from '../hooks/useResponsive'
 import AnnouncementBanner from '../components/AnnouncementBanner'
 import ScheduleGrid from '../components/ScheduleGrid'
 import Clock from '../components/Clock'
 import QRCode from 'qrcode.react'
+import { Smartphone, Monitor, Maximize } from 'lucide-react'
 
 export default function Display() {
   const [entries, setEntries] = useState([])
   const [announcement, setAnnouncement] = useState(null)
   const [offline, setOffline] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { isMobile, isTablet, isTouchDevice } = useResponsive()
 
   // Use the improved socket hook
   const { isConnected, connectionError, emit } = useSocket({
@@ -308,48 +312,99 @@ export default function Display() {
 
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link
-            to="/display?kiosk=true"
-            className="bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700 rounded-xl p-6 transition-all group"
+          {/* Kiosk Mode Button */}
+          <button
+            onClick={() => navigate('/kiosk')}
+            className="bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700 rounded-xl p-6 transition-all group cursor-pointer"
           >
             <div className="flex items-center">
               <div className="h-10 w-10 bg-brand-500/20 rounded-lg flex items-center justify-center mr-4">
-                <svg className="h-6 w-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Monitor className="h-6 w-6 text-brand-400" />
               </div>
               <div>
                 <h3 className="font-medium text-white group-hover:text-brand-400 transition-colors">Kiosk Mode</h3>
                 <p className="text-sm text-slate-400">Full-screen display view</p>
               </div>
             </div>
-          </Link>
+          </button>
 
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+          {/* Mobile Access Button */}
+          <button
+            onClick={() => navigate('/mobile')}
+            className="bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700 rounded-xl p-6 transition-all group cursor-pointer"
+          >
             <div className="flex items-center">
-              <div className="h-10 w-10 bg-slate-700 rounded-lg flex items-center justify-center mr-4">
-                <QRCode value={`${location.origin}/display`} size={40} bgColor="transparent" fgColor="#64748b" />
+              <div className="h-10 w-10 bg-blue-500/20 rounded-lg flex items-center justify-center mr-4">
+                <Smartphone className="h-6 w-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Mobile Access</h3>
-                <p className="text-sm text-slate-400">Scan QR code to view</p>
+                <h3 className="font-medium text-white group-hover:text-blue-400 transition-colors">Mobile Access</h3>
+                <p className="text-sm text-slate-400">Touch-optimized interface</p>
               </div>
             </div>
-          </div>
+          </button>
 
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+          {/* System Status Button */}
+          <button
+            onClick={() => {
+              // Toggle fullscreen mode
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+              } else {
+                document.exitFullscreen();
+              }
+            }}
+            className="bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700 rounded-xl p-6 transition-all group cursor-pointer"
+          >
             <div className="flex items-center">
               <div className="h-10 w-10 bg-green-500/20 rounded-lg flex items-center justify-center mr-4">
-                <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <Maximize className="h-6 w-6 text-green-400" />
               </div>
               <div>
-                <h3 className="font-medium text-white">System Status</h3>
-                <p className="text-sm text-slate-400">All systems operational</p>
+                <h3 className="font-medium text-white group-hover:text-green-400 transition-colors">Fullscreen</h3>
+                <p className="text-sm text-slate-400">Toggle fullscreen mode</p>
               </div>
             </div>
-          </div>
+          </button>
+        </div>
+      </div>
+
+      {/* View Mode Buttons */}
+      <div className="fixed top-8 right-8 z-50">
+        <div className="flex space-x-2">
+          <button
+            onClick={() => navigate('/mobile')}
+            className={`p-3 rounded-lg shadow-lg transition-all duration-300 ${
+              isMobile 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-blue-50'
+            }`}
+            title="Mobile View"
+          >
+            <Smartphone className="h-5 w-5" />
+          </button>
+          
+          <button
+            onClick={() => navigate('/kiosk')}
+            className="p-3 bg-white text-gray-700 hover:bg-purple-50 rounded-lg shadow-lg transition-all duration-300"
+            title="Kiosk Mode"
+          >
+            <Monitor className="h-5 w-5" />
+          </button>
+          
+          <button
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+              } else {
+                document.exitFullscreen();
+              }
+            }}
+            className="p-3 bg-white text-gray-700 hover:bg-green-50 rounded-lg shadow-lg transition-all duration-300"
+            title="Fullscreen"
+          >
+            <Maximize className="h-5 w-5" />
+          </button>
         </div>
       </div>
 

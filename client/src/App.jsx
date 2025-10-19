@@ -15,6 +15,9 @@ const Display = lazy(() => import('./pages/Display'))
 const Admin = lazy(() => import('./pages/Admin'))
 const SettingsManagement = lazy(() => import('./components/SettingsManagement'))
 const UserManagement = lazy(() => import('./components/UserManagement'))
+const Calendar = lazy(() => import('./components/Calendar'))
+const KioskMode = lazy(() => import('./components/KioskMode'))
+const MobileView = lazy(() => import('./components/MobileView'))
 
 export default function App() {
   return (
@@ -60,6 +63,13 @@ export default function App() {
                   <UserManagement />
                 </ProtectedRoute>
               } />
+              <Route path="/calendar" element={
+                <ProtectedRoute>
+                  <Calendar />
+                </ProtectedRoute>
+              } />
+              <Route path="/kiosk" element={<KioskMode />} />
+              <Route path="/mobile" element={<MobileView />} />
 
               {/* Catch all - redirect to home */}
               <Route path="*" element={<Navigate to="/" replace />} />

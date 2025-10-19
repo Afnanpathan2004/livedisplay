@@ -41,6 +41,7 @@ const users = new Map();
 const schedules = new Map();
 const announcements = new Map();
 const tasks = new Map();
+const roomBookings = new Map();
 
 // 🔐 AUTHENTICATION UTILITIES
 const hashPassword = async (password) => {
@@ -231,8 +232,13 @@ app.post('/api/auth/refresh', requireAuth, (req, res) => {
 });
 
 // 👥 USER MANAGEMENT ROUTES
-// Get all users (authenticated users only)
+// Get all users (admin only)
 app.get('/api/users', requireAuth, (req, res) => {
+  // Only admin can view all users
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   const userList = Array.from(users.values()).map(user => ({
     id: user.id,
     username: user.username,
@@ -248,8 +254,12 @@ app.get('/api/users', requireAuth, (req, res) => {
   res.json(userList);
 });
 
-// Get user by ID (authenticated users only)
+// Get user by ID (admin only)
 app.get('/api/users/:id', requireAuth, (req, res) => {
+  // Only admin can view user details
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
 
   const user = users.get(req.params.id);
   if (!user) {
@@ -269,8 +279,13 @@ app.get('/api/users/:id', requireAuth, (req, res) => {
   });
 });
 
-// Create new user (authenticated users only)
+// Create new user (admin only)
 app.post('/api/users', requireAuth, async (req, res) => {
+  // Only admin can create users
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   try {
     const { username, email, password, firstName, lastName, role = 'viewer', status = 'active' } = req.body;
 
@@ -321,8 +336,13 @@ app.post('/api/users', requireAuth, async (req, res) => {
   }
 });
 
-// Update user (authenticated users only)
+// Update user (admin only)
 app.put('/api/users/:id', requireAuth, async (req, res) => {
+  // Only admin can update users
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   const user = users.get(req.params.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -363,8 +383,13 @@ app.put('/api/users/:id', requireAuth, async (req, res) => {
   });
 });
 
-// Update user status (authenticated users only)
+// Update user status (admin only)
 app.patch('/api/users/:id/status', requireAuth, (req, res) => {
+  // Only admin can update user status
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   const user = users.get(req.params.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -389,8 +414,13 @@ app.patch('/api/users/:id/status', requireAuth, (req, res) => {
   });
 });
 
-// Approve user (authenticated users only)
+// Approve user (admin only)
 app.post('/api/users/:id/approve', requireAuth, (req, res) => {
+  // Only admin can approve users
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   const user = users.get(req.params.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -411,8 +441,13 @@ app.post('/api/users/:id/approve', requireAuth, (req, res) => {
   });
 });
 
-// Reject user (authenticated users only)
+// Reject user (admin only)
 app.post('/api/users/:id/reject', requireAuth, (req, res) => {
+  // Only admin can reject users
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   const user = users.get(req.params.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
@@ -435,8 +470,13 @@ app.post('/api/users/:id/reject', requireAuth, (req, res) => {
   });
 });
 
-// Delete user (authenticated users only)
+// Delete user (admin only)
 app.delete('/api/users/:id', requireAuth, (req, res) => {
+  // Only admin can delete users
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access denied. Admin only.' });
+  }
+
   // Prevent deleting yourself
   if (req.user.id === req.params.id) {
     return res.status(400).json({ error: 'Cannot delete your own account' });
@@ -1059,6 +1099,217 @@ app.get('/api/dashboard/stats', requireAuth, (req, res) => {
   });
 });
 
+// 📅 ROOM BOOKING CALENDAR ROUTES
+// Get all bookings
+app.get('/api/bookings', requireAuth, (req, res) => {
+  const { startDate, endDate, room } = req.query;
+  let bookingList = Array.from(roomBookings.values());
+
+  // Filter by date range if provided
+  if (startDate) {
+    bookingList = bookingList.filter(booking => 
+      new Date(booking.startDate) >= new Date(startDate)
+    );
+  }
+  if (endDate) {
+    bookingList = bookingList.filter(booking => 
+      new Date(booking.startDate) <= new Date(endDate)
+    );
+  }
+
+  // Filter by room if provided
+  if (room) {
+    bookingList = bookingList.filter(booking => booking.room === room);
+  }
+
+  // Sort by date and time
+  bookingList.sort((a, b) => {
+    const dateCompare = new Date(a.startDate) - new Date(b.startDate);
+    if (dateCompare !== 0) return dateCompare;
+    return a.startTime.localeCompare(b.startTime);
+  });
+
+  res.json(bookingList);
+});
+
+// Get booking by ID
+app.get('/api/bookings/:id', requireAuth, (req, res) => {
+  const booking = roomBookings.get(req.params.id);
+  if (!booking) {
+    return res.status(404).json({ error: 'Booking not found' });
+  }
+  res.json(booking);
+});
+
+// Create new booking
+app.post('/api/bookings', requireAuth, (req, res) => {
+  try {
+    const { title, room, startDate, startTime, endTime, description, attendees, organizer } = req.body;
+
+    if (!title || !room || !startDate || !startTime || !endTime) {
+      return res.status(400).json({ error: 'Title, room, date, and times are required' });
+    }
+
+    // Check for conflicts
+    const conflicts = Array.from(roomBookings.values()).filter(booking => 
+      booking.room === room &&
+      booking.startDate === startDate &&
+      booking.status !== 'cancelled' &&
+      (
+        (startTime >= booking.startTime && startTime < booking.endTime) ||
+        (endTime > booking.startTime && endTime <= booking.endTime) ||
+        (startTime <= booking.startTime && endTime >= booking.endTime)
+      )
+    );
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({ 
+        error: 'Room is already booked for this time slot',
+        conflicts: conflicts.map(b => ({ id: b.id, title: b.title, time: `${b.startTime} - ${b.endTime}` }))
+      });
+    }
+
+    const bookingId = Date.now().toString();
+    const newBooking = {
+      id: bookingId,
+      title,
+      room,
+      startDate,
+      startTime,
+      endTime,
+      description: description || '',
+      attendees: attendees || '',
+      organizer: organizer || req.user.username,
+      status: 'confirmed',
+      createdBy: req.user.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    roomBookings.set(bookingId, newBooking);
+
+    res.status(201).json({
+      message: 'Booking created successfully',
+      booking: newBooking
+    });
+  } catch (error) {
+    console.error('Create booking error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update booking
+app.put('/api/bookings/:id', requireAuth, (req, res) => {
+  const booking = roomBookings.get(req.params.id);
+  if (!booking) {
+    return res.status(404).json({ error: 'Booking not found' });
+  }
+
+  const { title, room, startDate, startTime, endTime, description, attendees, organizer, status } = req.body;
+
+  // Check for conflicts if room, date, or time changed
+  if (room || startDate || startTime || endTime) {
+    const checkRoom = room || booking.room;
+    const checkDate = startDate || booking.startDate;
+    const checkStartTime = startTime || booking.startTime;
+    const checkEndTime = endTime || booking.endTime;
+
+    const conflicts = Array.from(roomBookings.values()).filter(b => 
+      b.id !== req.params.id &&
+      b.room === checkRoom &&
+      b.startDate === checkDate &&
+      b.status !== 'cancelled' &&
+      (
+        (checkStartTime >= b.startTime && checkStartTime < b.endTime) ||
+        (checkEndTime > b.startTime && checkEndTime <= b.endTime) ||
+        (checkStartTime <= b.startTime && checkEndTime >= b.endTime)
+      )
+    );
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({ 
+        error: 'Room is already booked for this time slot',
+        conflicts: conflicts.map(b => ({ id: b.id, title: b.title, time: `${b.startTime} - ${b.endTime}` }))
+      });
+    }
+  }
+
+  const updatedBooking = {
+    ...booking,
+    title: title || booking.title,
+    room: room || booking.room,
+    startDate: startDate || booking.startDate,
+    startTime: startTime || booking.startTime,
+    endTime: endTime || booking.endTime,
+    description: description !== undefined ? description : booking.description,
+    attendees: attendees !== undefined ? attendees : booking.attendees,
+    organizer: organizer || booking.organizer,
+    status: status || booking.status,
+    updatedAt: new Date().toISOString()
+  };
+
+  roomBookings.set(req.params.id, updatedBooking);
+
+  res.json({
+    message: 'Booking updated successfully',
+    booking: updatedBooking
+  });
+});
+
+// Delete booking
+app.delete('/api/bookings/:id', requireAuth, (req, res) => {
+  const booking = roomBookings.get(req.params.id);
+  if (!booking) {
+    return res.status(404).json({ error: 'Booking not found' });
+  }
+
+  roomBookings.delete(req.params.id);
+
+  res.json({ message: 'Booking deleted successfully' });
+});
+
+// Cancel booking (soft delete)
+app.patch('/api/bookings/:id/cancel', requireAuth, (req, res) => {
+  const booking = roomBookings.get(req.params.id);
+  if (!booking) {
+    return res.status(404).json({ error: 'Booking not found' });
+  }
+
+  booking.status = 'cancelled';
+  booking.cancelledAt = new Date().toISOString();
+  booking.cancelledBy = req.user.id;
+  roomBookings.set(req.params.id, booking);
+
+  res.json({
+    message: 'Booking cancelled successfully',
+    booking
+  });
+});
+
+// Get bookings for a specific date
+app.get('/api/bookings/date/:date', requireAuth, (req, res) => {
+  const { date } = req.params;
+  const bookingList = Array.from(roomBookings.values())
+    .filter(booking => booking.startDate === date && booking.status !== 'cancelled')
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  res.json(bookingList);
+});
+
+// Get bookings for a specific room
+app.get('/api/bookings/room/:room', requireAuth, (req, res) => {
+  const { room } = req.params;
+  const bookingList = Array.from(roomBookings.values())
+    .filter(booking => booking.room === decodeURIComponent(room) && booking.status !== 'cancelled')
+    .sort((a, b) => {
+      const dateCompare = new Date(a.startDate) - new Date(b.startDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.startTime.localeCompare(b.startTime);
+    });
+
+  res.json(bookingList);
+});
+
 // ⚙️ SETTINGS MANAGEMENT ROUTES
 const systemSettings = {
   rooms: [
@@ -1305,6 +1556,51 @@ server.listen(PORT, async () => {
     };
     tasks.set('task-001', sampleTask);
 
+    // Add sample room bookings
+    const bookingDates = [
+      today,
+      new Date(Date.now() + 86400000).toISOString().split('T')[0], // tomorrow
+      new Date(Date.now() + 2*86400000).toISOString().split('T')[0], // day after
+    ];
+
+    bookingDates.forEach((date, idx) => {
+      const booking1 = {
+        id: `booking-${idx * 2 + 1}`,
+        title: 'Team Meeting',
+        room: 'Conference Hall',
+        startDate: date,
+        startTime: '10:00',
+        endTime: '11:30',
+        description: 'Weekly team sync-up',
+        attendees: '15',
+        organizer: 'afnan',
+        status: 'confirmed',
+        createdBy: 'admin-001',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const booking2 = {
+        id: `booking-${idx * 2 + 2}`,
+        title: 'Client Presentation',
+        room: 'Board Room',
+        startDate: date,
+        startTime: '14:00',
+        endTime: '16:00',
+        description: 'Q4 business review',
+        attendees: '8',
+        organizer: 'afnan',
+        status: 'confirmed',
+        createdBy: 'admin-001',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      roomBookings.set(booking1.id, booking1);
+      roomBookings.set(booking2.id, booking2);
+    });
+
+    console.log(`✅ Sample bookings created: ${roomBookings.size} bookings`);
     console.log('✅ Sample data loaded for demo');
     console.log('🎯 Ready for submission!');
 
