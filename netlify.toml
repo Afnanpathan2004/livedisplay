@@ -1,7 +1,8 @@
 [build]
   base = "client"
   publish = "dist"
-  command = "npm ci && npm run build"
+  # explicitly install devDependencies even if NODE_ENV=production
+  command = "npm ci --include=dev && npm run build"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -11,11 +12,13 @@
   to = "/index.html"
   status = 200
 
-[context.production.environment]
-  NODE_ENV = "production"
-
-[context.deploy-preview.environment]
-  NODE_ENV = "development"
-
-[context.branch-deploy.environment]
-  NODE_ENV = "development"
+# remove or avoid setting NODE_ENV here; Netlify sets it automatically for production
+# If you previously set it below, remove that block or comment it out.
+# [context.production.environment]
+#   NODE_ENV = "production"
+#
+# [context.deploy-preview.environment]
+#   NODE_ENV = "development"
+#
+# [context.branch-deploy.environment]
+#   NODE_ENV = "development"
