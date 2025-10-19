@@ -103,12 +103,32 @@ const requireRole = (role) => {
 const requireAdmin = requireRole('admin');
 
 // Middleware for display access
-export const displayAuth = (req, res, next) => {
-  const displayKey = req.headers['x-display-access'];
-  if (displayKey === process.env.DISPLAY_ACCESS_KEY) {
+const displayAuth = (req, res, next) => {
+  // 1) If a valid Bearer token is provided, allow
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.substring(7);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+      return next();
+    } catch (_) {
+      // fall through to origin check
+    }
+  }
+
+  // 2) Otherwise, allow based on server-side allowlist of origins
+  const origin = req.get('Origin') || req.get('origin') || '';
+  const allowed = (process.env.DISPLAY_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (origin && allowed.includes(origin)) {
     return next();
   }
-  res.status(401).json({ error: 'Invalid display access' });
+
+  return res.status(401).json({ error: 'Display access denied' });
 };
 
 module.exports = {
