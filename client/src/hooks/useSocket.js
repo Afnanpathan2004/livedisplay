@@ -16,7 +16,8 @@ export function useSocket(onEvents = {}) {
     // Only create socket once
     if (socketRef.current) return
 
-    const url = import.meta.env.VITE_WEBSOCKET_URL || 'VITE_WEBSOCKET_URL'
+    const fallback = typeof window !== 'undefined' ? window.location.origin.replace(/^http/, 'ws') : ''
+    const url = import.meta.env.VITE_WEBSOCKET_URL || fallback
     const socket = io(url, {
       transports: ['websocket', 'polling'],
       timeout: 10000,

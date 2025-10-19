@@ -3,7 +3,8 @@ const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'VITE_API_URL';
+const defaultOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || defaultOrigin;
 export const WS_URL = import.meta.env.VITE_WS_URL || API_BASE_URL;
 
 // Environment

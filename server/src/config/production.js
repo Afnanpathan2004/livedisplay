@@ -8,7 +8,7 @@ module.exports = {
   
   // Security
   jwt: {
-    secret: process.env.JWT_SECRET || 'change-this-secret-in-production',
+    secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
   
@@ -56,7 +56,7 @@ module.exports = {
   
   // Session
   session: {
-    secret: process.env.SESSION_SECRET || 'change-this-session-secret',
+    secret: process.env.SESSION_SECRET,
     maxAge: parseInt(process.env.SESSION_MAX_AGE) || 24 * 60 * 60 * 1000, // 24 hours
   },
   

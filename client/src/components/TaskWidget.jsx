@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { format } from 'date-fns'
+import config from '@/config'
 
-const API = import.meta.env.VITE_API_URL || 'VITE_API_URL'
+const API = config.API_BASE_URL
 
 export default function TaskWidget({ room, compact = false }) {
   const [tasks, setTasks] = useState([])

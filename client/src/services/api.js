@@ -92,13 +92,18 @@ export const createAxiosInstance = (config = {}) => {
 };
 
 // Create display-specific API instance
+const displayHeaders = {
+  'Content-Type': 'application/json',
+};
+const displayAccessKey = import.meta.env.VITE_DISPLAY_ACCESS_KEY;
+if (displayAccessKey) {
+  displayHeaders['X-Display-Access'] = displayAccessKey;
+}
+
 export const displayApi = axios.create({
   baseURL: config.API_BASE_URL,
   timeout: config.TIMEOUTS.api,
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Display-Access': import.meta.env.VITE_DISPLAY_ACCESS_KEY || 'default_display_key'
-  }
+  headers: displayHeaders,
 });
 
 // Create authenticated API instance for apiService
