@@ -411,18 +411,24 @@ export default function Admin() {
               >
                 Dashboard
               </Link>
-              <Link
-                to="/users"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
-              >
-                User Management
-              </Link>
-              <Link
-                to="/settings"
-                className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Settings
-              </Link>
+              {/* Only show User Management to admin */}
+              {user?.role === 'admin' && (
+                <Link
+                  to="/users"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                >
+                  User Management
+                </Link>
+              )}
+              {/* Show Settings to admin and hr */}
+              {(user?.role === 'admin' || user?.role === 'hr') && (
+                <Link
+                  to="/settings"
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Settings
+                </Link>
+              )}
               <Link
                 to="/display"
                 className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors"
