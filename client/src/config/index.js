@@ -3,7 +3,7 @@ const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'VITE_API_URL';
 export const WS_URL = import.meta.env.VITE_WS_URL || API_BASE_URL;
 
 // Environment
