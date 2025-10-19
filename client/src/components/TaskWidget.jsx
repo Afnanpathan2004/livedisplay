@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { format } from 'date-fns'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API = import.meta.env.VITE_API_URL || 'VITE_API_URL'
 
 export default function TaskWidget({ room, compact = false }) {
   const [tasks, setTasks] = useState([])

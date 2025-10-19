@@ -16,7 +16,7 @@ export function useSocket(onEvents = {}) {
     // Only create socket once
     if (socketRef.current) return
 
-    const url = import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:4000'
+    const url = import.meta.env.VITE_WEBSOCKET_URL || 'VITE_WEBSOCKET_URL'
     const socket = io(url, {
       transports: ['websocket', 'polling'],
       timeout: 10000,
