@@ -20,12 +20,16 @@ RUN apk add --no-cache \
     pixman-dev \
     pangomm-dev \
     libjpeg-turbo-dev \
-    freetype-dev
+    freetype-dev \
+    openssl
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+
+# Copy Prisma schema before install so postinstall (prisma generate) can run
+COPY prisma ./prisma
 
 # Install all dependencies (including dev for build)
 RUN npm ci --include=dev
@@ -43,7 +47,8 @@ RUN apk add --no-cache \
     g++ \
     cairo-dev \
     jpeg-dev \
-    pango-dev
+    pango-dev \
+    openssl
 
 WORKDIR /app
 
@@ -84,6 +89,7 @@ RUN apk add --no-cache \
     fontconfig \
     dumb-init \
     curl \
+    openssl \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user for security
@@ -97,6 +103,8 @@ COPY --from=builder --chown=livedisplay:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=livedisplay:nodejs /app/src ./src
 COPY --from=builder --chown=livedisplay:nodejs /app/package*.json ./
 COPY --from=builder --chown=livedisplay:nodejs /app/.env.production.template ./.env.template
+# Copy Prisma schema for runtime migrations (start:prod)
+COPY --from=builder --chown=livedisplay:nodejs /app/prisma ./prisma
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs /app/uploads /app/temp /app/backups && \
@@ -121,7 +129,7 @@ EXPOSE 4000
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
-CMD ["node", "src/index.js"]
+CMD ["npm", "run", "start:prod"]
 
 # ================================
 # Development Stage (optional)
