@@ -28,14 +28,46 @@ const PORT = process.env.PORT || 4000;
 
 const app = express();
 
-// CORS configuration - simplified and robust
+// CORS configuration - allow local dev and deployed frontends
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:51819'
+];
+
+// Support env-based origins (comma separated)
+const envOrigins = [];
+if (process.env.CLIENT_ORIGIN) envOrigins.push(process.env.CLIENT_ORIGIN);
+if (process.env.CORS_ALLOWED_ORIGINS) {
+  envOrigins.push(
+    ...process.env.CORS_ALLOWED_ORIGINS
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean)
+  );
+}
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envOrigins])];
+
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://127.0.0.1:51819', 
-    'http://localhost:3000',
-    'http://127.0.0.1:5173'
-  ],
+  origin: function (origin, callback) {
+    // Allow non-browser or same-origin requests (no origin header)
+    if (!origin) return callback(null, true);
+
+    // Netlify preview and app domains helper
+    const netlifyPattern = /https?:\/\/([a-z0-9-]+)\.netlify\.app$/i;
+    const renderPattern = /https?:\/\/([a-z0-9-]+)\.onrender\.com$/i;
+
+    if (
+      allowedOrigins.includes(origin) ||
+      netlifyPattern.test(origin) ||
+      renderPattern.test(origin)
+    ) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -78,6 +110,8 @@ app.use('/api/', limiter);
 
 // Apply CORS
 app.use(cors(corsOptions));
+// Handle preflight for all routes
+app.options('*', cors(corsOptions));
 
 // HTTP request logging
 app.use(morgan('combined', {
