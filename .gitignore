@@ -27,6 +27,8 @@ client/dist/
 .env
 server/.env
 client/.env
+.env.local
+.env.example
 
 # OS / Editor
 .DS_Store
