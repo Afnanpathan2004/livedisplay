@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
+
 // Simple logger fallback to avoid dependency issues
 const logger = {
   info: console.log,
@@ -25,7 +26,6 @@ const auditLogger = {
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const PORT = process.env.PORT || 4000;
-
 const app = express();
 
 // CORS configuration - allow local dev and deployed frontends
@@ -47,6 +47,14 @@ if (process.env.CORS_ALLOWED_ORIGINS) {
       .filter(Boolean)
   );
 }
+if (process.env.ALLOWED_ORIGINS) {
+  envOrigins.push(
+    ...process.env.ALLOWED_ORIGINS
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean)
+  );
+}
 
 const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envOrigins])];
 
@@ -54,11 +62,11 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow non-browser or same-origin requests (no origin header)
     if (!origin) return callback(null, true);
-
+    
     // Netlify preview and app domains helper
     const netlifyPattern = /https?:\/\/([a-z0-9-]+)\.netlify\.app$/i;
     const renderPattern = /https?:\/\/([a-z0-9-]+)\.onrender\.com$/i;
-
+    
     if (
       allowedOrigins.includes(origin) ||
       netlifyPattern.test(origin) ||
@@ -66,6 +74,7 @@ const corsOptions = {
     ) {
       return callback(null, true);
     }
+    
     callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
@@ -110,6 +119,7 @@ app.use('/api/', limiter);
 
 // Apply CORS
 app.use(cors(corsOptions));
+
 // Handle preflight for all routes
 app.options('*', cors(corsOptions));
 
