@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { io } from 'socket.io-client'
+import config from '../config'
 
 export function useSocket(onEvents = {}) {
   const socketRef = useRef(null)
@@ -17,7 +18,7 @@ export function useSocket(onEvents = {}) {
     if (socketRef.current) return
 
     const fallback = typeof window !== 'undefined' ? window.location.origin.replace(/^http/, 'ws') : ''
-    const url = import.meta.env.VITE_WEBSOCKET_URL || fallback
+    const url = config.WS_URL || import.meta.env.VITE_WS_URL || import.meta.env.VITE_WEBSOCKET_URL || fallback
     const socket = io(url, {
       transports: ['websocket', 'polling'],
       timeout: 10000,

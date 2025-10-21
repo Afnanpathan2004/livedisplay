@@ -71,7 +71,8 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=https://api.${DOMAIN:-localhost}
+      - VITE_API_URL=https://api.${DOMAIN:-localhost}
+      - VITE_WS_URL=https://api.${DOMAIN:-localhost}
     ports:
       - "3000:80"
     networks:

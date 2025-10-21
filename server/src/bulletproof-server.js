@@ -16,10 +16,23 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-for-live
 const app = express();
 const server = createServer(app);
 
+// Compute allowed CORS origins (env overrides defaults)
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+];
+const envOriginsRaw = process.env.CLIENT_ORIGIN || process.env.ALLOWED_ORIGINS || '';
+const envOrigins = envOriginsRaw
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+const allowedOrigins = envOrigins.length ? envOrigins : DEFAULT_ALLOWED_ORIGINS;
+
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -27,7 +40,7 @@ const io = new Server(server, {
 
 // 🔧 MIDDLEWARE SETUP
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
