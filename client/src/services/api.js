@@ -1,5 +1,5 @@
 import axios from 'axios';
-import config from '../config';
+import appConfig from '../config';
 
 // Function to handle API errors
 export const handleApiError = (error, showToast = true) => {
@@ -7,13 +7,13 @@ export const handleApiError = (error, showToast = true) => {
 
   if (error.response) {
     // Server responded with error status
-    message = error.response.data?.error || error.response.data?.message || config.ERROR_MESSAGES.server;
+    message = error.response.data?.error || error.response.data?.message || appConfig.ERROR_MESSAGES.server;
   } else if (error.request) {
     // Network error
-    message = config.ERROR_MESSAGES.network;
+    message = appConfig.ERROR_MESSAGES.network;
   } else {
     // Other error
-    message = error.message || config.ERROR_MESSAGES.unknown;
+    message = error.message || appConfig.ERROR_MESSAGES.unknown;
   }
 
   if (showToast && window.showError) {
@@ -23,25 +23,25 @@ export const handleApiError = (error, showToast = true) => {
   return message;
 };
 
-// Function to create axios instances with custom config
-export const createAxiosInstance = (config = {}) => {
+// Function to create axios instances with custom options
+export const createAxiosInstance = (options = {}) => {
   const instance = axios.create({
-    baseURL: config.API_BASE_URL,
-    timeout: config.TIMEOUTS.api,
+    baseURL: options.API_BASE_URL || appConfig.API_BASE_URL,
+    timeout: (options.TIMEOUTS?.api) ?? appConfig.TIMEOUTS.api,
     headers: {
       'Content-Type': 'application/json',
     },
-    ...config
+    ...options
   });
 
   // Request interceptor to add auth token
   instance.interceptors.request.use(
-    (config) => {
-      const token = localStorage.getItem(config.STORAGE_KEYS.token);
+    (request) => {
+      const token = localStorage.getItem(appConfig.STORAGE_KEYS.token);
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        request.headers.Authorization = `Bearer ${token}`;
       }
-      return config;
+      return request;
     },
     (error) => {
       return Promise.reject(error);
@@ -93,85 +93,85 @@ export const createAxiosInstance = (config = {}) => {
 
 // Create display-specific API instance (no client-side secret headers)
 export const displayApi = axios.create({
-  baseURL: config.API_BASE_URL,
-  timeout: config.TIMEOUTS.api,
+  baseURL: appConfig.API_BASE_URL,
+  timeout: appConfig.TIMEOUTS.api,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // Create authenticated API instance for apiService
-const authApi = createAxiosInstance(config);
-const scheduleApi = createAxiosInstance(config);
-const announcementsApi = createAxiosInstance(config);
-const tasksApi = createAxiosInstance(config);
-const dashboardApi = createAxiosInstance(config);
-const enterpriseApi = createAxiosInstance(config);
+const authApi = createAxiosInstance(appConfig);
+const scheduleApi = createAxiosInstance(appConfig);
+const announcementsApi = createAxiosInstance(appConfig);
+const tasksApi = createAxiosInstance(appConfig);
+const dashboardApi = createAxiosInstance(appConfig);
+const enterpriseApi = createAxiosInstance(appConfig);
 
 // API Service object with organized endpoints
 export const apiService = {
   auth: {
-    login: (credentials) => authApi.post(config.API_ENDPOINTS.login, credentials),
-    register: (userData) => authApi.post(config.API_ENDPOINTS.register, userData),
-    me: () => authApi.get(config.API_ENDPOINTS.me),
-    logout: () => authApi.post(config.API_ENDPOINTS.logout),
-    refresh: () => authApi.post(config.API_ENDPOINTS.refresh),
+    login: (credentials) => authApi.post(appConfig.API_ENDPOINTS.login, credentials),
+    register: (userData) => authApi.post(appConfig.API_ENDPOINTS.register, userData),
+    me: () => authApi.get(appConfig.API_ENDPOINTS.me),
+    logout: () => authApi.post(appConfig.API_ENDPOINTS.logout),
+    refresh: () => authApi.post(appConfig.API_ENDPOINTS.refresh),
   },
   schedule: {
-    getAll: (params) => scheduleApi.get(config.API_ENDPOINTS.schedule, { params }),
-    getById: (id) => scheduleApi.get(`${config.API_ENDPOINTS.schedule}/${id}`),
-    create: (data) => scheduleApi.post(config.API_ENDPOINTS.schedule, data),
-    update: (id, data) => scheduleApi.put(`${config.API_ENDPOINTS.schedule}/${id}`, data),
-    delete: (id) => scheduleApi.delete(`${config.API_ENDPOINTS.schedule}/${id}`),
+    getAll: (params) => scheduleApi.get(appConfig.API_ENDPOINTS.schedule, { params }),
+    getById: (id) => scheduleApi.get(`${appConfig.API_ENDPOINTS.schedule}/${id}`),
+    create: (data) => scheduleApi.post(appConfig.API_ENDPOINTS.schedule, data),
+    update: (id, data) => scheduleApi.put(`${appConfig.API_ENDPOINTS.schedule}/${id}`, data),
+    delete: (id) => scheduleApi.delete(`${appConfig.API_ENDPOINTS.schedule}/${id}`),
   },
   announcements: {
-    getAll: () => announcementsApi.get(config.API_ENDPOINTS.announcements),
-    getById: (id) => announcementsApi.get(`${config.API_ENDPOINTS.announcements}/${id}`),
-    create: (data) => announcementsApi.post(config.API_ENDPOINTS.announcements, data),
-    update: (id, data) => announcementsApi.put(`${config.API_ENDPOINTS.announcements}/${id}`, data),
-    delete: (id) => announcementsApi.delete(`${config.API_ENDPOINTS.announcements}/${id}`),
+    getAll: () => announcementsApi.get(appConfig.API_ENDPOINTS.announcements),
+    getById: (id) => announcementsApi.get(`${appConfig.API_ENDPOINTS.announcements}/${id}`),
+    create: (data) => announcementsApi.post(appConfig.API_ENDPOINTS.announcements, data),
+    update: (id, data) => announcementsApi.put(`${appConfig.API_ENDPOINTS.announcements}/${id}`, data),
+    delete: (id) => announcementsApi.delete(`${appConfig.API_ENDPOINTS.announcements}/${id}`),
   },
   tasks: {
-    getAll: (params) => tasksApi.get(config.API_ENDPOINTS.tasks, { params }),
-    getById: (id) => tasksApi.get(`${config.API_ENDPOINTS.tasks}/${id}`),
-    create: (data) => tasksApi.post(config.API_ENDPOINTS.tasks, data),
-    update: (id, data) => tasksApi.put(`${config.API_ENDPOINTS.tasks}/${id}`, data),
-    delete: (id) => tasksApi.delete(`${config.API_ENDPOINTS.tasks}/${id}`),
+    getAll: (params) => tasksApi.get(appConfig.API_ENDPOINTS.tasks, { params }),
+    getById: (id) => tasksApi.get(`${appConfig.API_ENDPOINTS.tasks}/${id}`),
+    create: (data) => tasksApi.post(appConfig.API_ENDPOINTS.tasks, data),
+    update: (id, data) => tasksApi.put(`${appConfig.API_ENDPOINTS.tasks}/${id}`, data),
+    delete: (id) => tasksApi.delete(`${appConfig.API_ENDPOINTS.tasks}/${id}`),
   },
   dashboard: {
-    getStats: () => dashboardApi.get(config.API_ENDPOINTS.dashboard),
+    getStats: () => dashboardApi.get(appConfig.API_ENDPOINTS.dashboard),
   },
   enterprise: {
     employees: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.employees, { params }),
-      getById: (id) => enterpriseApi.get(`${config.API_ENDPOINTS.employees}/${id}`),
-      create: (data) => enterpriseApi.post(config.API_ENDPOINTS.employees, data),
-      update: (id, data) => enterpriseApi.put(`${config.API_ENDPOINTS.employees}/${id}`, data),
-      delete: (id) => enterpriseApi.delete(`${config.API_ENDPOINTS.employees}/${id}`),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.employees, { params }),
+      getById: (id) => enterpriseApi.get(`${appConfig.API_ENDPOINTS.employees}/${id}`),
+      create: (data) => enterpriseApi.post(appConfig.API_ENDPOINTS.employees, data),
+      update: (id, data) => enterpriseApi.put(`${appConfig.API_ENDPOINTS.employees}/${id}`, data),
+      delete: (id) => enterpriseApi.delete(`${appConfig.API_ENDPOINTS.employees}/${id}`),
     },
     visitors: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.visitors, { params }),
-      create: (data) => enterpriseApi.post(config.API_ENDPOINTS.visitors, data),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.visitors, { params }),
+      create: (data) => enterpriseApi.post(appConfig.API_ENDPOINTS.visitors, data),
     },
     bookings: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.bookings, { params }),
-      create: (data) => enterpriseApi.post(config.API_ENDPOINTS.bookings, data),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.bookings, { params }),
+      create: (data) => enterpriseApi.post(appConfig.API_ENDPOINTS.bookings, data),
     },
     assets: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.assets, { params }),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.assets, { params }),
     },
     attendance: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.attendance, { params }),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.attendance, { params }),
     },
     leaves: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.leaves, { params }),
-      create: (data) => enterpriseApi.post(config.API_ENDPOINTS.leaves, data),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.leaves, { params }),
+      create: (data) => enterpriseApi.post(appConfig.API_ENDPOINTS.leaves, data),
     },
     notifications: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.notifications, { params }),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.notifications, { params }),
     },
     reports: {
-      getAll: (params) => enterpriseApi.get(config.API_ENDPOINTS.reports, { params }),
+      getAll: (params) => enterpriseApi.get(appConfig.API_ENDPOINTS.reports, { params }),
     },
   },
   settings: {
