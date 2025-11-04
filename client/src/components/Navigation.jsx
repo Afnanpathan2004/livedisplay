@@ -76,11 +76,6 @@ const Navigation = () => {
 
   // Show all navigation items to logged-in users
   const filteredNavItems = navigationItems;
-  
-  // Debug logging
-  console.log('Navigation - User:', user);
-  console.log('Navigation - Items to show:', filteredNavItems.length);
-  console.log('Navigation - Items:', filteredNavItems.map(i => i.name));
 
   const NavItem = ({ item, mobile = false }) => {
     const isActive = location.pathname === item.path;

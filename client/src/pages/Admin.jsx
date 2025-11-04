@@ -5,7 +5,7 @@ import axios from 'axios'
 import { AuthContext } from '../contexts/AuthContext'
 import { apiService } from '../services/api'
 import { format } from 'date-fns'
-import { API_BASE_URL } from '../config'
+import config, { API_BASE_URL } from '../config'
 
 export default function Admin() {
   const { user, logout } = useContext(AuthContext)
@@ -85,10 +85,7 @@ export default function Admin() {
   const locationOptions = dropdownSettings.locations
   const amenitiesOptions = dropdownSettings.amenities
 
-  const axiosAuth = useMemo(() => axios.create({ 
-    baseURL: API_BASE_URL, 
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-  }), [])
+  // Remove custom axios instance - use apiService which has proper interceptors
 
   // Load dropdown settings
   async function loadSettings() {
@@ -200,7 +197,7 @@ export default function Admin() {
     setError('')
     try {
       const scheduleDate = form.scheduleDate || date;
-      await axiosAuth.post(`${API_BASE_URL}/api/schedule`, { ...form, date: scheduleDate })
+      await apiService.schedule.create({ ...form, date: scheduleDate })
       setForm({ start_time: '', end_time: '', room_number: '', subject: '', faculty_name: '', scheduleDate: '' })
       setSuccess(`Schedule entry added successfully for ${scheduleDate}!`)
       loadData()
@@ -214,7 +211,7 @@ export default function Admin() {
   async function deleteEntry(id) {
     if (!confirm('Are you sure you want to delete this entry?')) return
     try {
-      await axiosAuth.delete(`${API_BASE_URL}/api/schedule/${id}`)
+      await apiService.schedule.delete(id)
       setSuccess('Schedule entry deleted successfully!')
       loadData()
     } catch (err) {
@@ -227,9 +224,9 @@ export default function Admin() {
     try {
       const active = announcements.find(a => a.active)
       if (active) {
-        await axiosAuth.put(`${API_BASE_URL}/api/announcements/${active.id}`, { message: announcement, active: true })
+        await apiService.announcements.update(active.id, { message: announcement, active: true })
       } else {
-        await axiosAuth.post(`${API_BASE_URL}/api/announcements`, { message: announcement, active: true })
+        await apiService.announcements.create({ message: announcement, active: true })
       }
       setSuccess('Announcement saved successfully!')
       loadData()
@@ -244,7 +241,7 @@ export default function Admin() {
     e.preventDefault()
     setLoading(true)
     try {
-      await axiosAuth.post(`${API_BASE_URL}/api/tasks`, {
+      await apiService.tasks.create({
         ...taskForm,
         dueTime: taskForm.dueTime ? new Date(taskForm.dueTime).toISOString() : null
       })
@@ -325,8 +322,13 @@ export default function Admin() {
       })
       
       const endpoint = type === 'all' ? '/api/export/all' : '/api/export/schedule'
-      const response = await axiosAuth.get(`${endpoint}?${params}`, {
-        responseType: 'blob'
+      const token = localStorage.getItem(config.STORAGE_KEYS.token)
+      
+      const response = await axios.get(`${API_BASE_URL}${endpoint}?${params}`, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
       
       const blob = new Blob([response.data])
@@ -369,10 +371,16 @@ export default function Admin() {
       }
       
       const entries = data.entries || data.data?.schedules || []
+      const token = localStorage.getItem(config.STORAGE_KEYS.token)
       
-      const response = await axiosAuth.post('/api/export/schedule/import', {
+      const response = await axios.post(`${API_BASE_URL}/api/export/schedule/import`, {
         entries,
         overwrite: false
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
       
       setSuccess(`Import completed: ${response.data.results.imported} imported, ${response.data.results.skipped} skipped`)
@@ -810,17 +818,35 @@ export default function Admin() {
                   <div key={task.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-medium text-white">{task.title}</h4>
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-medium text-white">{task.title}</h4>
+                          {task.status === 'completed' && (
+                            <span className="text-xs text-green-400 flex items-center gap-1">
+                              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Completed
+                            </span>
+                          )}
+                        </div>
                         {task.description && (
                           <p className="text-sm text-slate-300 mt-1">{task.description}</p>
                         )}
                         <div className="flex items-center space-x-4 mt-2 text-xs text-slate-400">
                           <span className={`px-2 py-1 rounded ${
                             task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                            task.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                            task.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
                             'bg-slate-500/20 text-slate-400'
                           }`}>
-                            {task.status.replace('_', ' ')}
+                            {task.status?.replace('_', ' ') || 'pending'}
+                          </span>
+                          <span className={`px-2 py-1 rounded ${
+                            task.priority === 'urgent' ? 'bg-red-500/20 text-red-400' :
+                            task.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                            task.priority === 'medium' ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-slate-500/20 text-slate-400'
+                          }`}>
+                            {task.priority || 'medium'} priority
                           </span>
                           {task.room && <span>Room: {task.room}</span>}
                           {task.dueTime && (
@@ -831,6 +857,43 @@ export default function Admin() {
                             }</span>
                           )}
                         </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        {task.status !== 'completed' && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await apiService.tasks.update(task.id, { ...task, status: 'completed' })
+                                setSuccess('Task marked as complete!')
+                                loadData()
+                              } catch (err) {
+                                setError('Failed to complete task')
+                              }
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                            title="Mark as complete"
+                          >
+                            ✓ Complete
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Delete this task?')) return
+                            try {
+                              await apiService.tasks.delete(task.id)
+                              setSuccess('Task deleted!')
+                              loadData()
+                            } catch (err) {
+                              setError('Failed to delete task')
+                            }
+                          }}
+                          className="text-red-400 hover:text-red-300 transition-colors"
+                          title="Delete task"
+                        >
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -18,7 +18,10 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: false,
       hmr: {
+        protocol: 'ws',
         host: "localhost",
+        port: 5173,
+        clientPort: 5173,
       },
       // Disable React Router warnings in development
       fs: {

@@ -465,7 +465,7 @@ const Calendar = () => {
               <input
                 type="text"
                 value={bookingForm.title}
-                onChange={(e) => setBookingForm({ ...bookingForm, title: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, title: e.target.value }))}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Meeting title"
@@ -478,7 +478,7 @@ const Calendar = () => {
               </label>
               <select
                 value={bookingForm.room}
-                onChange={(e) => setBookingForm({ ...bookingForm, room: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, room: e.target.value }))}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
@@ -496,7 +496,7 @@ const Calendar = () => {
               <input
                 type="date"
                 value={bookingForm.startDate}
-                onChange={(e) => setBookingForm({ ...bookingForm, startDate: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, startDate: e.target.value }))}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -509,7 +509,7 @@ const Calendar = () => {
               <input
                 type="time"
                 value={bookingForm.startTime}
-                onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, startTime: e.target.value }))}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -522,7 +522,7 @@ const Calendar = () => {
               <input
                 type="time"
                 value={bookingForm.endTime}
-                onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, endTime: e.target.value }))}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -535,7 +535,7 @@ const Calendar = () => {
               <input
                 type="text"
                 value={bookingForm.organizer}
-                onChange={(e) => setBookingForm({ ...bookingForm, organizer: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, organizer: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Organizer name"
               />
@@ -548,7 +548,7 @@ const Calendar = () => {
               <input
                 type="text"
                 value={bookingForm.attendees}
-                onChange={(e) => setBookingForm({ ...bookingForm, attendees: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, attendees: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Number of attendees"
               />
@@ -560,7 +560,7 @@ const Calendar = () => {
               </label>
               <textarea
                 value={bookingForm.description}
-                onChange={(e) => setBookingForm({ ...bookingForm, description: e.target.value })}
+                onChange={(e) => setBookingForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Meeting description"

@@ -57,7 +57,7 @@ export const createAxiosInstance = (options = {}) => {
       // Handle common error scenarios
       if (error.response?.status === 401) {
         // Unauthorized - redirect to login
-        localStorage.removeItem(config.STORAGE_KEYS.token);
+        localStorage.removeItem(appConfig.STORAGE_KEYS.token);
         window.location.href = '/login';
         return Promise.reject(new Error('Session expired. Please login again.'));
       }

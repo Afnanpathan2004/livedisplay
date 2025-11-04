@@ -13,6 +13,7 @@ import { Smartphone, Monitor, Maximize } from 'lucide-react'
 export default function Display() {
   const [entries, setEntries] = useState([])
   const [announcement, setAnnouncement] = useState(null)
+  const [tasks, setTasks] = useState([])
   const [offline, setOffline] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
@@ -26,6 +27,7 @@ export default function Display() {
       if (!payload || !payload.date || payload.date === todayStr) loadSchedule()
     },
     'announcement:update': () => loadAnnouncement(),
+    'task:update': () => loadTasks(),
     'system:midnight': () => {
       // Reload to switch to new date automatically
       location.reload()
@@ -75,9 +77,21 @@ export default function Display() {
     }
   }
 
+  async function loadTasks() {
+    try {
+      const res = await apiService.tasks.getAll()
+      // Only show pending and in-progress tasks on display
+      const activeTasks = res.data.filter(t => t.status !== 'completed' && t.status !== 'cancelled')
+      setTasks(activeTasks)
+    } catch (e) {
+      console.error('Failed to load tasks:', e)
+    }
+  }
+
   useEffect(() => {
     loadSchedule()
     loadAnnouncement()
+    loadTasks()
   }, [])
 
   if (loading) {
@@ -309,6 +323,72 @@ export default function Display() {
             </div>
           )}
         </div>
+
+        {/* Tasks Section */}
+        {tasks.length > 0 && (
+          <div className="mt-8 bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
+                <svg className="h-6 w-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Active Tasks
+              </h2>
+              <span className="text-sm text-slate-400">{tasks.length} pending</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {tasks.map(task => (
+                <div 
+                  key={task.id} 
+                  className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-semibold text-white flex-1">{task.title}</h3>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      task.priority === 'urgent' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                      task.priority === 'high' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                      task.priority === 'medium' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                      'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                    }`}>
+                      {task.priority || 'medium'}
+                    </span>
+                  </div>
+                  
+                  {task.description && (
+                    <p className="text-sm text-slate-300 mb-3 line-clamp-2">{task.description}</p>
+                  )}
+                  
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    {task.room && (
+                      <span className="flex items-center gap-1">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {task.room}
+                      </span>
+                    )}
+                    {task.dueTime && (
+                      <span className="flex items-center gap-1">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {format(new Date(task.dueTime), 'MMM dd, HH:mm')}
+                      </span>
+                    )}
+                    <span className={`px-2 py-0.5 rounded ${
+                      task.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-slate-500/20 text-slate-400'
+                    }`}>
+                      {task.status?.replace('_', ' ') || 'pending'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
