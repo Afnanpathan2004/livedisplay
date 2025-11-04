@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService, handleApiError } from '../services/api';
 import Layout from './Layout';
 import { 
@@ -87,7 +87,7 @@ const Calendar = () => {
     }
   };
 
-  const filterBookings = () => {
+  const filterBookings = useCallback(() => {
     let filtered = [...bookings];
 
     // Filter by search term
@@ -123,9 +123,9 @@ const Calendar = () => {
     });
 
     setFilteredBookings(filtered);
-  };
+  }, [bookings, searchTerm, filterRoom, view, currentDate]);
 
-  const filterSchedules = () => {
+  const filterSchedules = useCallback(() => {
     let filtered = [...schedules];
 
     // Filter by search term
@@ -161,7 +161,7 @@ const Calendar = () => {
     });
 
     setFilteredSchedules(filtered);
-  };
+  }, [schedules, searchTerm, filterRoom, view, currentDate]);
 
   const handleCreateBooking = async (e) => {
     e.preventDefault();
