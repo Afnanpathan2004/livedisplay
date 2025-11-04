@@ -1,7 +1,6 @@
 [build]
   base = "client"
-  publish = "dist"
-  # explicitly install devDependencies even if NODE_ENV=production
+  publish = "client/dist"
   command = "npm ci --include=dev && npm run build"
 
 [build.environment]
