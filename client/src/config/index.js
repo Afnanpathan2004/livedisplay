@@ -73,8 +73,8 @@ export const API_ENDPOINTS = {
 
 // Timeouts
 export const TIMEOUTS = {
-  api: 10000, // 10 seconds
-  websocket: 5000, // 5 seconds
+  api: 60000, // 60 seconds (Render free tier can take time to wake up)
+  websocket: 10000, // 10 seconds
   reconnect: 3000, // 3 seconds
   debounce: 300, // 300ms
   throttle: 1000, // 1 second

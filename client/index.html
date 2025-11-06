@@ -10,7 +10,30 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   </head>
   <body class="h-full bg-slate-950 text-slate-100">
-    <div id="root" class="h-full"></div>
+    <div id="root" class="h-full">
+      <!-- Loading fallback to prevent blank screen -->
+      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom right, #020617, #0c4a6e, #020617);">
+        <div style="text-align: center;">
+          <div style="width: 64px; height: 64px; margin: 0 auto 24px; background: linear-gradient(to right, #3b82f6, #06b6d4); border-radius: 16px; display: flex; align-items: center; justify-content: center; animation: bounce 1s infinite;">
+            <svg style="width: 40px; height: 40px; color: white;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <h1 style="font-size: 2rem; font-weight: bold; background: linear-gradient(to right, white, #bfdbfe, #a5f3fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">LiveBoard</h1>
+          <p style="color: #94a3b8; margin-bottom: 16px;">Loading...</p>
+          <div style="width: 40px; height: 40px; margin: 0 auto; border: 3px solid rgba(59, 130, 246, 0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        </div>
+      </div>
+      <style>
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+      </style>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

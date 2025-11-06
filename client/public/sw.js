@@ -1,5 +1,5 @@
-const APP_CACHE = 'liveboard-app-v1';
-const RUNTIME_CACHE = 'liveboard-runtime-v1';
+const APP_CACHE = 'liveboard-app-v2'; // Increment version to force update
+const RUNTIME_CACHE = 'liveboard-runtime-v2';
 const APP_ASSETS = [
   '/',
   '/index.html',
@@ -17,15 +17,24 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
+      // Clear all old caches
       const keys = await caches.keys();
       await Promise.all(
         keys.map((key) => {
           if (![APP_CACHE, RUNTIME_CACHE].includes(key)) {
+            console.log('Deleting old cache:', key);
             return caches.delete(key);
           }
         })
       );
+      // Take control of all pages immediately
       await self.clients.claim();
+      
+      // Notify all clients to reload
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach(client => {
+        client.postMessage({ type: 'SW_UPDATED' });
+      });
     })()
   );
 });

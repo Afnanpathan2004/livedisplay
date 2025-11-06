@@ -1757,6 +1757,31 @@ server.listen(PORT, async () => {
   });
 });
 
+// 🔄 KEEPALIVE - Prevent Render free tier from sleeping
+if (process.env.NODE_ENV === 'production') {
+  const KEEPALIVE_INTERVAL = 10 * 60 * 1000; // 10 minutes
+  const BASE_URL = process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || `http://localhost:${PORT}`;
+  
+  setInterval(async () => {
+    try {
+      const https = require('https');
+      const http = require('http');
+      const url = `${BASE_URL}/api/health`;
+      const protocol = BASE_URL.startsWith('https') ? https : http;
+      
+      protocol.get(url, (res) => {
+        console.log(`🏓 Keepalive ping successful - Status: ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.error('⚠️ Keepalive ping failed:', err.message);
+      });
+    } catch (error) {
+      console.error('⚠️ Keepalive error:', error.message);
+    }
+  }, KEEPALIVE_INTERVAL);
+  
+  console.log(`🔄 Keepalive enabled - pinging ${BASE_URL}/api/health every 10 minutes`);
+}
+
 // 🛑 GRACEFUL SHUTDOWN
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully');

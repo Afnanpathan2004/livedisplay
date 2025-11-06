@@ -19,7 +19,12 @@ export default function Login() {
       const from = location.state?.from?.pathname || getDefaultRoute(userData.role)
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err.message || 'Login failed')
+      // Check if it's a timeout error (Render cold start)
+      if (err.message?.includes('timeout') || err.message?.includes('ECONNABORTED')) {
+        setError('Server is waking up (free tier), please wait 30 seconds and try again...')
+      } else {
+        setError(err.message || 'Login failed')
+      }
       throw err // Re-throw to prevent form from thinking submission was successful
     }
   }
