@@ -1,3 +1,4 @@
+// Prisma schema for LiveDisplay Enterprise Office Management System
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,99 +8,406 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model ScheduleEntry {
-  id           String   @id @default(uuid())
-  date         DateTime @db.Date
-  startTime    DateTime @db.Time
-  endTime      DateTime @db.Time
-  roomNumber   String
-  subject      String
-  facultyName  String
-  tags         Json?    @default("[]")
-  lastUpdated  DateTime @updatedAt
-  createdBy    String?
-  createdById  String?
-  user         User?    @relation(fields: [createdById], references: [id])
-
-  @@map("schedule_entries")
+// Enums
+enum UserRole {
+  admin
+  hr
+  manager
+  employee
+  security
+  maintenance
 }
 
-model Announcement {
-  id        String    @id @default(uuid())
-  message   String
-  active    Boolean   @default(true)
-  startAt   DateTime?
-  endAt     DateTime?
-  priority  Int       @default(0)
-  timestamp DateTime  @default(now())
-  createdBy String?
-  createdById String?
-  user      User?     @relation(fields: [createdById], references: [id])
-
-  @@map("announcements")
+enum UserStatus {
+  active
+  inactive
+  suspended
+  pending
 }
 
-model Task {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  assignedTo  String?
-  room        String?
-  dueTime     DateTime?
-  status      String    @default("pending") // pending, in_progress, completed, cancelled
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  createdBy   String?
-  createdById String?
-  user        User?     @relation(fields: [createdById], references: [id])
-
-  @@map("tasks")
+enum LeaveType {
+  casual
+  sick
+  earned
+  maternity
+  paternity
+  emergency
 }
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum BookingStatus {
+  pending
+  approved
+  rejected
+  cancelled
+  completed
+}
+
+enum VisitorStatus {
+  pending
+  approved
+  checked_in
+  checked_out
+  rejected
+}
+
+enum AssetStatus {
+  available
+  assigned
+  maintenance
+  retired
+  lost
+}
+
+enum NotificationPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum NotificationStatus {
+  unread
+  read
+  archived
+}
+
+// Models
+model Building {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @db.VarChar(255)
+  address        String
+  totalFloors    Int      @default(1) @map("total_floors")
+  capacity       Int      @default(100)
+  facilities     Json     @default("[]")
+  securityLevel  String   @default("medium") @map("security_level") @db.VarChar(50)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  floors Floor[]
+  rooms  Room[]
+  users  User[]
+
+  @@map("buildings")
+}
+
+model Floor {
+  id         String   @id @default(uuid()) @db.Uuid
+  buildingId String   @map("building_id") @db.Uuid
+  floorNumber Int     @map("floor_number")
+  name       String?  @db.VarChar(255)
+  capacity   Int      @default(50)
+  facilities Json     @default("[]")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  rooms    Room[]
+  users    User[]
+
+  @@unique([buildingId, floorNumber])
+  @@map("floors")
+}
+
+model Department {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @unique @db.VarChar(255)
+  description    String?
+  headEmployeeId String?  @map("head_employee_id") @db.Uuid
+  budget         Decimal? @db.Decimal(15, 2)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  headEmployee User?  @relation("DepartmentHead", fields: [headEmployeeId], references: [id])
+  users        User[] @relation("DepartmentUsers")
+
+  @@map("departments")
+}
+
 model User {
-  id           String    @id @default(uuid())
-  username     String    @unique
-  email        String?   @unique
-  passwordHash String
-  role         String    @default("viewer") // admin, editor, viewer
-  lastLogin    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                   String     @id @default(uuid()) @db.Uuid
+  employeeId           String     @unique @map("employee_id") @db.VarChar(50)
+  username             String     @unique @db.VarChar(100)
+  email                String     @unique @db.VarChar(255)
+  passwordHash         String     @map("password_hash") @db.VarChar(255)
+  firstName            String     @map("first_name") @db.VarChar(100)
+  lastName             String     @map("last_name") @db.VarChar(100)
+  phone                String?    @db.VarChar(20)
+  role                 UserRole   @default(employee)
+  status               UserStatus @default(active)
+  departmentId         String?    @map("department_id") @db.Uuid
+  designation          String?    @db.VarChar(255)
+  reportingManagerId   String?    @map("reporting_manager_id") @db.Uuid
+  buildingId           String?    @map("building_id") @db.Uuid
+  floorId              String?    @map("floor_id") @db.Uuid
+  workstation          String?    @db.VarChar(100)
+  joiningDate          DateTime   @map("joining_date") @db.Date
+  leavingDate          DateTime?  @map("leaving_date") @db.Date
+  profilePictureUrl    String?    @map("profile_picture_url")
+  emergencyContact     Json?      @map("emergency_contact")
+  permissions          Json       @default("[]")
+  lastLogin            DateTime?  @map("last_login") @db.Timestamptz(6)
+  passwordChangedAt    DateTime   @default(now()) @map("password_changed_at") @db.Timestamptz(6)
+  failedLoginAttempts  Int        @default(0) @map("failed_login_attempts")
+  lockedUntil          DateTime?  @map("locked_until") @db.Timestamptz(6)
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  // Relations
-  scheduleEntries ScheduleEntry[]
-  announcements   Announcement[]
-  tasks           Task[]
-  auditLogs       AuditLog[]
-  devices         Device[]
+  department        Department?    @relation("DepartmentUsers", fields: [departmentId], references: [id])
+  reportingManager  User?          @relation("UserManager", fields: [reportingManagerId], references: [id])
+  building          Building?      @relation(fields: [buildingId], references: [id])
+  floor             Floor?         @relation(fields: [floorId], references: [id])
+  
+  subordinates      User[]         @relation("UserManager")
+  departmentHeadOf  Department[]   @relation("DepartmentHead")
+  roomBookings      RoomBooking[]
+  visitors          Visitor[]
+  assets            Asset[]
+  leaveRequests     LeaveRequest[]
+  attendance        Attendance[]
+  schedules         Schedule[]
+  refreshTokens     RefreshToken[]
 
+  @@index([email])
+  @@index([employeeId])
+  @@index([departmentId])
+  @@index([status])
   @@map("users")
 }
 
-model Device {
-  id        String   @id @default(uuid())
-  name      String
-  location  String?
-  config    Json     @default("{}")
-  lastSeen  DateTime @default(now())
-  createdAt DateTime @default(now())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+model Room {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(255)
+  roomNumber  String    @map("room_number") @db.VarChar(50)
+  buildingId  String    @map("building_id") @db.Uuid
+  floorId     String    @map("floor_id") @db.Uuid
+  capacity    Int       @default(1)
+  roomType    String    @map("room_type") @db.VarChar(100)
+  facilities  Json      @default("[]")
+  hourlyRate  Decimal   @default(0) @map("hourly_rate") @db.Decimal(10, 2)
+  isBookable  Boolean   @default(true) @map("is_bookable")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@map("devices")
+  building Building      @relation(fields: [buildingId], references: [id])
+  floor    Floor         @relation(fields: [floorId], references: [id])
+  bookings RoomBooking[]
+
+  @@unique([buildingId, floorId, roomNumber])
+  @@map("rooms")
+}
+
+model RoomBooking {
+  id              String        @id @default(uuid()) @db.Uuid
+  roomId          String        @map("room_id") @db.Uuid
+  bookedBy        String        @map("booked_by") @db.Uuid
+  title           String        @db.VarChar(255)
+  description     String?
+  startTime       DateTime      @map("start_time") @db.Timestamptz(6)
+  endTime         DateTime      @map("end_time") @db.Timestamptz(6)
+  attendees       Json          @default("[]")
+  status          BookingStatus @default(pending)
+  approvedBy      String?       @map("approved_by") @db.Uuid
+  approvalDate    DateTime?     @map("approval_date") @db.Timestamptz(6)
+  rejectionReason String?       @map("rejection_reason")
+  totalCost       Decimal       @default(0) @map("total_cost") @db.Decimal(10, 2)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  room Room @relation(fields: [roomId], references: [id])
+  user User @relation(fields: [bookedBy], references: [id])
+
+  @@index([roomId])
+  @@index([bookedBy])
+  @@index([startTime])
+  @@map("room_bookings")
+}
+
+model Visitor {
+  id                 String        @id @default(uuid()) @db.Uuid
+  name               String        @db.VarChar(255)
+  email              String?       @db.VarChar(255)
+  phone              String        @db.VarChar(20)
+  company            String?       @db.VarChar(255)
+  purpose            String
+  hostEmployeeId     String        @map("host_employee_id") @db.Uuid
+  visitDate          DateTime      @map("visit_date") @db.Date
+  expectedArrival    DateTime?     @map("expected_arrival") @db.Time(6)
+  expectedDeparture  DateTime?     @map("expected_departure") @db.Time(6)
+  actualArrival      DateTime?     @map("actual_arrival") @db.Timestamptz(6)
+  actualDeparture    DateTime?     @map("actual_departure") @db.Timestamptz(6)
+  status             VisitorStatus @default(pending)
+  approvedBy         String?       @map("approved_by") @db.Uuid
+  approvalDate       DateTime?     @map("approval_date") @db.Timestamptz(6)
+  rejectionReason    String?       @map("rejection_reason")
+  idProofType        String?       @map("id_proof_type") @db.VarChar(100)
+  idProofNumber      String?       @map("id_proof_number") @db.VarChar(100)
+  photoUrl           String?       @map("photo_url")
+  accessAreas        Json          @default("[]") @map("access_areas")
+  securityNotes      String?       @map("security_notes")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  hostEmployee User @relation(fields: [hostEmployeeId], references: [id])
+
+  @@index([hostEmployeeId])
+  @@index([visitDate])
+  @@map("visitors")
+}
+
+model Asset {
+  id                  String      @id @default(uuid()) @db.Uuid
+  assetTag            String      @unique @map("asset_tag") @db.VarChar(100)
+  name                String      @db.VarChar(255)
+  category            String      @db.VarChar(100)
+  brand               String?     @db.VarChar(100)
+  model               String?     @db.VarChar(100)
+  serialNumber        String?     @map("serial_number") @db.VarChar(255)
+  purchaseDate        DateTime?   @map("purchase_date") @db.Date
+  purchaseCost        Decimal?    @map("purchase_cost") @db.Decimal(15, 2)
+  warrantyExpiry      DateTime?   @map("warranty_expiry") @db.Date
+  assignedTo          String?     @map("assigned_to") @db.Uuid
+  location            String?     @db.VarChar(255)
+  status              AssetStatus @default(available)
+  condition           String      @default("good") @db.VarChar(100)
+  specifications      Json        @default("{}")
+  maintenanceSchedule Json        @default("[]") @map("maintenance_schedule")
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  assignedToUser User? @relation(fields: [assignedTo], references: [id])
+
+  @@index([assignedTo])
+  @@index([status])
+  @@map("assets")
+}
+
+model LeaveRequest {
+  id              String      @id @default(uuid()) @db.Uuid
+  employeeId      String      @map("employee_id") @db.Uuid
+  leaveType       LeaveType   @map("leave_type")
+  startDate       DateTime    @map("start_date") @db.Date
+  endDate         DateTime    @map("end_date") @db.Date
+  totalDays       Int         @map("total_days")
+  reason          String
+  status          LeaveStatus @default(pending)
+  approvedBy      String?     @map("approved_by") @db.Uuid
+  approvalDate    DateTime?   @map("approval_date") @db.Timestamptz(6)
+  rejectionReason String?     @map("rejection_reason")
+  emergencyContact Json?      @map("emergency_contact")
+  documents       Json        @default("[]")
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  employee User @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([startDate])
+  @@map("leave_requests")
+}
+
+model Attendance {
+  id               String    @id @default(uuid()) @db.Uuid
+  employeeId       String    @map("employee_id") @db.Uuid
+  date             DateTime  @db.Date
+  checkIn          DateTime? @map("check_in") @db.Timestamptz(6)
+  checkOut         DateTime? @map("check_out") @db.Timestamptz(6)
+  breakTimeMinutes Int       @default(0) @map("break_time_minutes")
+  totalHours       Decimal?  @map("total_hours") @db.Decimal(4, 2)
+  status           String    @default("present") @db.VarChar(50)
+  location         String?   @db.VarChar(255)
+  ipAddress        String?   @map("ip_address")
+  deviceInfo       Json?     @map("device_info")
+  notes            String?
+  approvedBy       String?   @map("approved_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  employee User @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@map("attendance")
+}
+
+model Schedule {
+  id             String               @id @default(uuid()) @db.Uuid
+  title          String               @db.VarChar(255)
+  content        String
+  type           String               @default("announcement") @db.VarChar(100)
+  startTime      DateTime             @map("start_time") @db.Timestamptz(6)
+  endTime        DateTime             @map("end_time") @db.Timestamptz(6)
+  isActive       Boolean              @default(true) @map("is_active")
+  priority       NotificationPriority @default(medium)
+  targetAudience Json                 @default("[\"all\"]") @map("target_audience")
+  createdBy      String               @map("created_by") @db.Uuid
+  approvedBy     String?              @map("approved_by") @db.Uuid
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("schedules")
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  tokenHash         String    @map("token_hash") @db.VarChar(64)
+  deviceFingerprint String?   @map("device_fingerprint") @db.VarChar(64)
+  deviceInfo        Json      @default("{}") @map("device_info")
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(6)
+  isRevoked         Boolean   @default(false) @map("is_revoked")
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceFingerprint])
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@index([deviceFingerprint])
+  @@map("refresh_tokens")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique @db.VarChar(255)
+  value       Json
+  description String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("system_settings")
 }
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  action    String   // create, update, delete, login, logout
-  entity    String   // schedule, announcement, task, user
-  entityId  String?
-  before    Json?
-  after     Json?
-  timestamp DateTime @default(now())
-  ipAddress String?
-  userAgent String?
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  action       String    @db.VarChar(100)
+  resourceType String    @map("resource_type") @db.VarChar(100)
+  resourceId   String?   @map("resource_id") @db.Uuid
+  oldValues    Json?     @map("old_values")
+  newValues    Json?     @map("new_values")
+  ipAddress    String?   @map("ip_address")
+  userAgent    String?   @map("user_agent")
+  timestamp    DateTime  @default(now()) @db.Timestamptz(6)
 
+  @@index([userId])
+  @@index([timestamp])
   @@map("audit_logs")
 }

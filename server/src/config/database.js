@@ -1,5 +1,6 @@
-// Simple database configuration that works with existing setup
-const mockDb = require('../utils/mockDb');
+// Database configuration with PostgreSQL and Prisma support
+const { PrismaClient } = require('@prisma/client');
+const { Pool } = require('pg');
 
 // Simple logger fallback
 const logger = {
@@ -9,45 +10,103 @@ const logger = {
   debug: console.log
 };
 
-// For now, always use mock database to ensure compatibility
-const useMockDb = true;
+// Initialize Prisma Client
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+});
 
-// Query function that works with mock database
+// PostgreSQL connection pool for raw queries (optional)
+let pool = null;
+
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
+
+  pool.on('error', (err) => {
+    logger.error('Unexpected database pool error:', err);
+  });
+}
+
+// Query function for raw SQL (if needed)
 const query = async (text, params = []) => {
-  // For mock database, we'll just return a simple response
-  // This maintains compatibility with existing code
-  return {
-    rows: [],
-    rowCount: 0
-  };
+  if (!pool) {
+    throw new Error('Database pool not initialized. Check DATABASE_URL.');
+  }
+  const start = Date.now();
+  try {
+    const res = await pool.query(text, params);
+    const duration = Date.now() - start;
+    if (duration > 1000) {
+      logger.warn(`Slow query (${duration}ms):`, text);
+    }
+    return res;
+  } catch (error) {
+    logger.error('Database query error:', error);
+    throw error;
+  }
 };
 
 // Health check function
 const healthCheck = async () => {
-  return {
-    status: 'healthy',
-    database: 'mock',
-    message: 'Using mock database for compatibility'
-  };
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return {
+      status: 'healthy',
+      database: 'postgresql',
+      message: 'Database connection successful'
+    };
+  } catch (error) {
+    logger.error('Database health check failed:', error);
+    return {
+      status: 'unhealthy',
+      database: 'postgresql',
+      message: error.message
+    };
+  }
 };
 
-// Transaction helper (no-op for mock)
+// Transaction helper using Prisma
 const transaction = async (callback) => {
-  return await callback({
-    query: query
+  return await prisma.$transaction(async (tx) => {
+    return await callback(tx);
   });
 };
 
-// Graceful shutdown (no-op for mock)
+// Graceful shutdown
 const closePool = async () => {
-  logger.info('Mock database - no pool to close');
+  try {
+    await prisma.$disconnect();
+    if (pool) {
+      await pool.end();
+    }
+    logger.info('Database connections closed');
+  } catch (error) {
+    logger.error('Error closing database connections:', error);
+    throw error;
+  }
 };
 
+// Graceful shutdown handlers
+process.on('SIGINT', async () => {
+  await closePool();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await closePool();
+  process.exit(0);
+});
+
 module.exports = {
-  pool: null,
+  prisma,
+  pool,
   query,
   transaction,
   healthCheck,
   closePool,
-  useMockDb: true
+  useMockDb: false
 };
