@@ -128,8 +128,13 @@ EXPOSE 4000
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application
-CMD ["npm", "run", "start:prod"]
+# Start the application with database initialization
+# This command will:
+# 1. Generate Prisma Client (if needed)
+# 2. Push schema to database
+# 3. Initialize default data (admin user)
+# 4. Start the server
+CMD ["sh", "-c", "npx prisma generate && npx prisma db push --accept-data-loss && node src/utils/dbInit.js && node src/bulletproof-server.js"]
 
 # ================================
 # Development Stage (optional)
